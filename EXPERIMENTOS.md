@@ -46,4 +46,25 @@ avaliado uma vez, no final, com autorização.
   (nem melhorar) o F1 externo sem usar o próprio teste.
 - **Cuidados contra contaminação:** nenhum link do teste; página 1 dos feeds do teste ignorada; feed
   `fato-ou-fake` do G1 excluído das true; versões em espanhol/inglês do Boatos.org excluídas.
-- **Resultado:** (em andamento)
+- **Coleta:** links listados após os filtros — Boatos.org 1.768, E-farsas 585, G1 1.809, Agência Brasil 100.
+  Textos extraídos em `dados_externos/corpus_externo_bruto.csv`.
+- **Resultado:** a preparar (mínimo de palavras, duplicados, descontaminação e divisão treino/validação são feitos
+  por `experimentos.py preparar`).
+
+## Planejamento dos próximos experimentos (definido antes de ver qualquer resultado)
+
+Métrica principal: **F1 macro na validação externa**, com a entrada cortada em 50 palavras (formato do produto).
+Também: balanced accuracy, recall por classe e acerto por fonte.
+
+| Etapa | O quê | Por quê |
+|---|---|---|
+| E3 base | modelos salvos na validação externa | ponto de partida |
+| E4 dados | combinações de Fake.br, FakeRecogna (2020–21 e todos os anos) e corpus externo; peso do externo (x3, x5) | o limite identificado até aqui é de dados (fake de um site só), não de modelo |
+| E5 modelo | C, sublinear, n-gramas de caracteres, maiúsculas, união word+char, regressão logística | boatos usam CAPS, pontuação e grafia próprias; char n-grams capturam isso e resistem a erros de digitação |
+| E6 fontes | treinar sem E-farsas/Agência Brasil e validar nelas (e vice-versa com Boatos.org/G1) | separar generalização real de assinatura de site |
+| E7 embeddings | multilingual-e5-small e MiniLM multilíngue + regressão logística | representação semântica pode depender menos do vocabulário de cada fonte |
+
+Divisão do corpus externo: fake → 30% mais recentes de cada agência na validação (imita o teste, que é o mais
+recente); true → 30% aleatório por fonte (todas as true são recentes). Itens quase idênticos (cosseno ≥ 0,8) a
+textos do teste são removidos antes (usa só o texto do teste, sem label e sem modelo).
+
