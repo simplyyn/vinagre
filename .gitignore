@@ -1,0 +1,10 @@
+# Ambiente Python local
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Cache de coleta e dados reprodutíveis (baixados/gerados pelos scripts)
+dados_externos/html/
+dados_externos/*.parquet
+dados_externos/emb_*.npy
