@@ -24,22 +24,17 @@ O scikit-learn **tem que ser 1.6.1** (versão em que os `.joblib` foram salvos).
     divisão, e os resultados já registrados deixariam de ser comparáveis.
   - O cache de HTML (`dados_externos/html/`) e o parquet do FakeRecogna não vão para o Git; o parquet é baixado
     sozinho na primeira execução (`anls.carregar_fakerecogna`).
-- Etapas feitas: **E3 base** e **E4 dados (11 combinações)**. Resultados em `resultados_experimentos.csv` e
-  `EXPERIMENTOS.md`. Melhor até agora: `fr2021 + ext` (F1 90,47), em empate com `frall + ext`, `fb + fr2021 + ext`
-  e `ext` sozinho (87,6–90,5).
-- **Pendente na E4:** as 6 variações com peso do externo (`ext x3`, `ext x5`). Se `resultados_experimentos.csv` não
-  tiver linhas com "(ext x3)"/"(ext x5)", elas não terminaram — **não rode `dados` inteiro de novo** (duplicaria
-  linhas); rode só as variações com peso (ver passo 2 abaixo).
+- Etapas feitas: **E3 base** e **E4 dados (17 combinações, completa)**. Resultados em
+  `resultados_experimentos.csv` e `EXPERIMENTOS.md`. Topo em empate técnico: `frall + ext x3` (F1 90,69),
+  `fr2021 + ext` (90,47), `frall + ext x5` (90,09); peso do externo muda < 1 ponto. **Não rode `dados` de novo**
+  (duplicaria linhas no CSV).
 
 ## 2.1 O que fazer amanhã (em ordem)
 
 1. Conferir o ambiente: `.venv\Scripts\python.exe -c "import sklearn; print(sklearn.__version__)"` → 1.6.1.
-2. Se faltarem as linhas "(ext x3)/(ext x5)" no CSV, rodar só elas:
-   ```powershell
-   .venv\Scripts\python.exe -c "from experimentos import *; f,_,v=fontes_de_treino(); [avaliar(treinar(*juntar(f,n,repetir_ext=k)),v,' + '.join(n)+f' (ext x{k})','E4 dados') for n in (['fb','fr2021','ext'],['fb','frall','ext'],['frall','ext']) for k in (3,5)]"
-   ```
-3. Fechar a E4 no `EXPERIMENTOS.md` e escolher a combinação de dados (empates de < 1–2 pontos: preferir a mais
-   simples). Candidata atual: `fr2021+ext`.
+2. ~~Terminar a E4~~ (feito).
+3. Escolher a combinação de dados e registrar no `EXPERIMENTOS.md` (empates de < 1–2 pontos: preferir a mais
+   simples). Sugestão: `fr2021+ext` (sem peso, mesmo FakeRecogna do candidato, empatada com a maior).
 4. Rodar `experimentos.py modelo <combinação>` (E5), ex.: `modelo fr2021+ext` (com peso: `fr2021+extx3`).
 5. Rodar `experimentos.py fontes <combinação>` (E6).
 6. Rodar E7 (embeddings, demora na CPU):

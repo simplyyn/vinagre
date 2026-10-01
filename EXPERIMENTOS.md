@@ -98,7 +98,7 @@ avaliado uma vez, no final, com autorização.
 - **Leitura:** o candidato é ~3 pontos melhor (no limite do empate), com ganho vindo do recall de fake (Boatos.org).
   O E-farsas é o ponto fraco dos dois (n=34).
 
-## E4. Combinações de dados de treino (01/10/2026) — PARCIAL
+## E4. Combinações de dados de treino (01/10/2026)
 
 - **Ação:** `experimentos.py dados` — mesmo modelo (TF-IDF word (1,2) + LinearSVC balanceado, treino misto
   30/50/100), variando só os dados. `fb` = Fake.br; `fr2021` = FakeRecogna 2020–21 (como no candidato);
@@ -117,8 +117,16 @@ avaliado uma vez, no final, com autorização.
 | frall + ext | 89,59 | 89,11 | 83,75 | 94,46 | 96,8 | 86,8 | 61,8 | 94,3 |
 | fb + fr2021 + ext | 89,74 | 88,81 | 81,95 | 95,67 | 100,0 | 86,4 | 50,0 | 95,4 |
 | fb + frall + ext | 89,09 | 88,29 | 81,59 | 94,98 | 96,8 | 87,2 | 41,2 | 94,9 |
+| fb + fr2021 + ext (ext x3) | 89,86 | 88,90 | 81,95 | 95,85 | 96,8 | 86,4 | 50,0 | 95,8 |
+| fb + fr2021 + ext (ext x5) | 88,91 | 88,01 | 80,87 | 95,16 | 96,8 | 85,2 | 50,0 | 95,1 |
+| fb + frall + ext (ext x3) | 89,92 | 89,18 | 83,03 | 95,33 | 96,8 | 86,8 | 55,9 | 95,2 |
+| fb + frall + ext (ext x5) | 89,36 | 88,55 | 81,95 | 95,16 | 96,8 | 86,8 | 47,1 | 95,1 |
+| frall + ext (ext x3) | 90,69 | 90,27 | 85,56 | 94,98 | 96,8 | 87,2 | 73,5 | 94,9 |
+| frall + ext (ext x5) | 90,09 | 89,46 | 83,75 | 95,16 | 96,8 | 86,4 | 64,7 | 95,1 |
 
-- **Leitura preliminar (falta o peso do externo x3/x5):**
+- **Leitura:**
+  - peso do externo (x3/x5): variações de < 1 ponto → **empate**; `frall + ext x3` é o maior número (90,69), mas a
+    diferença para `fr2021 + ext` (90,47) é desprezível. A alta no E-farsas (73,5) é em 34 itens, não é confiável;
   - o corpus externo é o que mais ajuda: sozinho já vai de ~83 (candidato) para 88,3;
   - entre as combinações com `ext`, todas ficam entre 87,6 e 90,5 → **empate técnico** (diferença < ~2 pontos);
     `fr2021 + ext` está na frente numericamente;
