@@ -226,8 +226,9 @@ def etapa_modelo(nomes_dados):
     rep = 1
     nomes = []
     for n in nomes_dados.split("+"):
-        if n.startswith("ext") and "x" in n:
-            rep = int(n.split("x")[1]); n = "ext"
+        # "extx3" -> ext repetido 3 vezes ("ext" sozinho também tem "x", por isso compara o prefixo inteiro).
+        if n.startswith("extx"):
+            rep = int(n[len("extx"):]); n = "ext"
         nomes.append(n)
     X, y = juntar(fontes, nomes, repetir_ext=rep)
     for nome, fab in fabricas_modelo().items():

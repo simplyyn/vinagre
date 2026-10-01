@@ -13,14 +13,45 @@ py -3.12 -m venv .venv   # ou: & "$env:LOCALAPPDATA\Programs\Python\Python312\py
 
 O scikit-learn **tem que ser 1.6.1** (versão em que os `.joblib` foram salvos).
 
-## 2. Estado em 30/09/2026
+## 2. Estado em 01/10/2026
 
-- Ambiente, pipeline e números de controle: feitos (ver `EXPERIMENTOS.md`, E0).
+- Ambiente, pipeline e números de controle: feitos e conferidos de novo em outro PC (ver `EXPERIMENTOS.md`, E0 e E2b).
 - Teste externo final coletado e conferido: `teste_externo_2026.csv` (39 itens). **NÃO avaliado.**
-- Corpus externo para treino/validação: `dados_externos/corpus_externo_bruto.csv` (textos já extraídos).
-  O cache de HTML (`dados_externos/html/`, ~480 MB) não vai para o Git; só é necessário para mudar a extração.
-  Se o CSV bruto estiver faltando, rode `.venv\Scripts\python.exe coletar_corpus_externo.py` (~1h).
-- Próximo passo: rodar as etapas de `experimentos.py` (preparar → base → dados → modelo → fontes → embeddings).
+- Corpus externo **recoletado em 01/10** e agora versionado no Git:
+  - `dados_externos/corpus_externo_bruto.csv` (textos extraídos) e `dados_externos/corpus_externo.csv`
+    (já preparado: mínimo de palavras, duplicados, descontaminação, coluna `split` treino/val).
+  - **Não rode `coletar_corpus_externo.py` nem `experimentos.py preparar` de novo**: isso mudaria o corpus e a
+    divisão, e os resultados já registrados deixariam de ser comparáveis.
+  - O cache de HTML (`dados_externos/html/`) e o parquet do FakeRecogna não vão para o Git; o parquet é baixado
+    sozinho na primeira execução (`anls.carregar_fakerecogna`).
+- Etapas feitas: **E3 base** e **E4 dados (11 combinações)**. Resultados em `resultados_experimentos.csv` e
+  `EXPERIMENTOS.md`. Melhor até agora: `fr2021 + ext` (F1 90,47), em empate com `frall + ext`, `fb + fr2021 + ext`
+  e `ext` sozinho (87,6–90,5).
+- **Pendente na E4:** as 6 variações com peso do externo (`ext x3`, `ext x5`). Se `resultados_experimentos.csv` não
+  tiver linhas com "(ext x3)"/"(ext x5)", elas não terminaram — **não rode `dados` inteiro de novo** (duplicaria
+  linhas); rode só as variações com peso (ver passo 2 abaixo).
+
+## 2.1 O que fazer amanhã (em ordem)
+
+1. Conferir o ambiente: `.venv\Scripts\python.exe -c "import sklearn; print(sklearn.__version__)"` → 1.6.1.
+2. Se faltarem as linhas "(ext x3)/(ext x5)" no CSV, rodar só elas:
+   ```powershell
+   .venv\Scripts\python.exe -c "from experimentos import *; f,_,v=fontes_de_treino(); [avaliar(treinar(*juntar(f,n,repetir_ext=k)),v,' + '.join(n)+f' (ext x{k})','E4 dados') for n in (['fb','fr2021','ext'],['fb','frall','ext'],['frall','ext']) for k in (3,5)]"
+   ```
+3. Fechar a E4 no `EXPERIMENTOS.md` e escolher a combinação de dados (empates de < 1–2 pontos: preferir a mais
+   simples). Candidata atual: `fr2021+ext`.
+4. Rodar `experimentos.py modelo <combinação>` (E5), ex.: `modelo fr2021+ext` (com peso: `fr2021+extx3`).
+5. Rodar `experimentos.py fontes <combinação>` (E6).
+6. Rodar E7 (embeddings, demora na CPU):
+   `experimentos.py embeddings <combinação> intfloat/multilingual-e5-small "query: "` e
+   `experimentos.py embeddings <combinação> sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`.
+7. Analisar, escolher o modelo final com justificativa e mostrar o resumo **antes** de qualquer avaliação no teste.
+
+Obs.: `etapa_fontes` e `etapa_embeddings` não entendem o sufixo de peso (`extx3`); use nelas a combinação sem
+peso (ex.: `fr2021+ext`). O parser da `etapa_modelo` foi corrigido em 01/10 ("ext" quebrava por conter "x").
+
+Ponto de atenção registrado no E2b: no corpus externo as fake de treino vão até jul/2026 e as true são de
+ago–out/2026 (possível atalho de "assunto da época"); comentar isso na análise final.
 
 ## 3. Prompt para colar no Claude Code
 
@@ -30,12 +61,11 @@ aumentar o F1 em notícias externas. Regras: responda em português, didático, 
 registre cada ação, motivo e resultado em EXPERIMENTOS.md; NÃO use o teste_externo_2026.csv para escolher nada
 (ele só será avaliado uma vez, no final, com minha autorização); commits sem coautoria do Claude.
 
-Continue de onde parou:
+Continue de onde parou, seguindo a seção 2.1 do CONTINUAR.md:
 1. Confira o ambiente (.venv, sklearn 1.6.1). Se faltar algo, siga a seção 1 do CONTINUAR.md.
-2. Rode `.venv\Scripts\python.exe experimentos.py preparar` e revise o corpus externo (tamanhos, datas, divisão
-   treino/validação, descontaminação).
-3. Rode as etapas `base`, `dados`, depois `modelo <melhor combinação de dados>`, `fontes <combinação>` e
-   `embeddings <combinação> <modelo>` (modelos: intfloat/multilingual-e5-small com prefixo "query: ",
+2. NÃO recolete nem rode `preparar` (o corpus e a divisão já estão no Git). Termine a E4 (pesos x3/x5) se faltar.
+3. Rode `modelo <melhor combinação de dados>`, `fontes <combinação>` e `embeddings <combinação> <modelo>`
+   (modelos: intfloat/multilingual-e5-small com prefixo "query: ",
    sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2).
 4. Analise os resultados (diferenças < 1–2 pontos são empate), escolha o modelo final justificando, e me mostre
    o resumo antes de qualquer avaliação no teste final.

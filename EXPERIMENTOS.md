@@ -51,6 +51,82 @@ avaliado uma vez, no final, com autorização.
 - **Resultado:** a preparar (mínimo de palavras, duplicados, descontaminação e divisão treino/validação são feitos
   por `experimentos.py preparar`).
 
+### E2b. Recoleta em outro PC e preparação (01/10/2026)
+
+- **Ação:** em um PC novo, o `corpus_externo_bruto.csv` não estava no repositório; rodei de novo
+  `coletar_corpus_externo.py` (mesmo código, mesmos filtros). Ambiente recriado (Python 3.12.10, sklearn 1.6.1) e
+  números de controle conferidos de novo: só tamanho 94,15% acc; TF-IDF N=50 89,88% F1 macro (iguais ao E0).
+- **Por quê recoletar e não esperar o CSV antigo:** o código e os filtros anti-contaminação são os mesmos; a
+  diferença é só de um dia nos feeds.
+- **Diferença em relação à coleta de 30/09:** links após filtros — Boatos.org 1.769 (+1), E-farsas 585 (=),
+  G1 1.827 (+18), Agência Brasil 103 (+3). Os feeds andaram um dia, então o corpus **não é idêntico** ao
+  original. Links do teste continuam excluídos (lista do `teste_externo_2026_bruto.csv`).
+- **Extração:** 940 páginas do Boatos.org e 459 do E-farsas ficaram sem texto (sem blockquote; o boato é imagem ou
+  vídeo — mesma limitação do E1). Nenhum erro de download.
+- **`experimentos.py preparar`:** 4.284 brutos → 2.853 com mínimo de palavras → 2.849 sem duplicados → 2.849 após
+  descontaminação (nenhum item com cosseno ≥ 0,8 com o teste).
+
+| Split | Label | Fonte | n | De | Até |
+|---|---|---|---:|---|---|
+| treino | fake | Boatos.org | 567 | 2025-11-27 | 2026-07-19 |
+| treino | fake | E-farsas | 78 | 2022-05-11 | 2024-07-20 |
+| treino | true | Agência Brasil | 72 | 2026-09-24 | 2026-10-01 |
+| treino | true | G1 | 1.277 | 2026-08-08 | 2026-10-01 |
+| val | fake | Boatos.org | 243 | 2026-07-19 | 2026-09-27 |
+| val | fake | E-farsas | 34 | 2024-07-23 | 2026-03-04 |
+| val | true | Agência Brasil | 31 | 2026-09-26 | 2026-10-01 |
+| val | true | G1 | 547 | 2026-08-07 | 2026-10-01 |
+
+- **Observações para a análise:**
+  - classes desbalanceadas (treino 645 fake × 1.349 true; validação 277 × 578) → por isso a métrica é F1 macro e
+    os modelos usam `class_weight="balanced"`;
+  - **descompasso temporal no treino:** as fake vão de 2022 a jul/2026, as true são todas de ago–out/2026. O modelo
+    pode aprender "assunto da época" (mesmo risco da V2 na seção 5.10 do README). O teste tem a mesma estrutura
+    (true de 30/09, fake recentes), então a validação não detecta esse atalho; a etapa E6 (fontes) ajuda só em parte;
+  - E-farsas e Agência Brasil são pequenos (34 e 31 na validação): acerto por fonte nelas tem variação alta.
+
+## E3. Base: modelos salvos na validação externa (01/10/2026)
+
+- **Ação:** `experimentos.py base` — os dois `.joblib` avaliados na validação externa (855 itens, até 50 palavras).
+- **Por quê:** ponto de partida para medir qualquer ganho.
+
+| Modelo | F1 macro | Bal. acc | Rec. fake | Rec. true | Ag. Brasil | Boatos.org | E-farsas | G1 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| modelo_final (só Fake.br) | 79,93 | 78,80 | 66,43 | 91,18 | 100,0 | 70,8 | 35,3 | 90,7 |
+| modelo_candidato (Fake.br + FR 2020–21) | 82,94 | 83,01 | 77,26 | 88,75 | 96,8 | 81,1 | 50,0 | 88,3 |
+
+- **Leitura:** o candidato é ~3 pontos melhor (no limite do empate), com ganho vindo do recall de fake (Boatos.org).
+  O E-farsas é o ponto fraco dos dois (n=34).
+
+## E4. Combinações de dados de treino (01/10/2026) — PARCIAL
+
+- **Ação:** `experimentos.py dados` — mesmo modelo (TF-IDF word (1,2) + LinearSVC balanceado, treino misto
+  30/50/100), variando só os dados. `fb` = Fake.br; `fr2021` = FakeRecogna 2020–21 (como no candidato);
+  `frall` = FakeRecogna todos os anos; `ext` = treino do corpus externo.
+
+| Dados | F1 macro | Bal. acc | Rec. fake | Rec. true | Ag. Brasil | Boatos.org | E-farsas | G1 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| fb | 79,93 | 78,80 | 66,43 | 91,18 | 100,0 | 70,8 | 35,3 | 90,7 |
+| fb + fr2021 | 82,18 | 82,30 | 76,53 | 88,06 | 96,8 | 80,7 | 47,1 | 87,6 |
+| fb + frall | 70,21 | 73,35 | 78,70 | 67,99 | 96,8 | 84,0 | 41,2 | 66,4 |
+| fr2021 | 75,11 | 77,33 | 79,06 | 75,61 | 90,3 | 81,9 | 58,8 | 74,8 |
+| frall | 69,23 | 72,76 | 79,78 | 65,74 | 93,5 | 82,3 | 61,8 | 64,2 |
+| ext | 88,34 | 87,00 | 77,98 | 96,02 | 100,0 | 81,9 | 50,0 | 95,8 |
+| fb + ext | 87,64 | 86,29 | 76,90 | 95,67 | 100,0 | 82,3 | 38,2 | 95,4 |
+| **fr2021 + ext** | **90,47** | **89,71** | 83,75 | 95,67 | 96,8 | 87,2 | 58,8 | 95,6 |
+| frall + ext | 89,59 | 89,11 | 83,75 | 94,46 | 96,8 | 86,8 | 61,8 | 94,3 |
+| fb + fr2021 + ext | 89,74 | 88,81 | 81,95 | 95,67 | 100,0 | 86,4 | 50,0 | 95,4 |
+| fb + frall + ext | 89,09 | 88,29 | 81,59 | 94,98 | 96,8 | 87,2 | 41,2 | 94,9 |
+
+- **Leitura preliminar (falta o peso do externo x3/x5):**
+  - o corpus externo é o que mais ajuda: sozinho já vai de ~83 (candidato) para 88,3;
+  - entre as combinações com `ext`, todas ficam entre 87,6 e 90,5 → **empate técnico** (diferença < ~2 pontos);
+    `fr2021 + ext` está na frente numericamente;
+  - `frall` sem o externo derruba o recall de true (~66–68%): mesmo atalho temporal já visto na V2 (fake de vários
+    anos × true só de 2020–21);
+  - o Fake.br não ajuda quando já há corpus externo (fb + ext ≈ ext; fb + fr2021 + ext ≈ fr2021 + ext);
+  - E-farsas continua instável (34 itens; 38–62%).
+
 ## Planejamento dos próximos experimentos (definido antes de ver qualquer resultado)
 
 Métrica principal: **F1 macro na validação externa**, com a entrada cortada em 50 palavras (formato do produto).
