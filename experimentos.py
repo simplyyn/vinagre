@@ -237,11 +237,13 @@ def etapa_modelo(nomes_dados):
                 obs=f"dados={nomes_dados}; {time.time() - t0:.0f}s")
 
 
-def etapa_fontes(nomes_dados):
+def etapa_fontes(nomes_dados, modelos_e5=()):
     # E6: robustez entre fontes dentro do corpus externo. Treina sem uma fonte de cada classe e valida nela.
     # Pergunta: o ganho do corpus externo vem de "boato x jornalismo" ou de assinatura de cada site?
+    # Além do modelo base, compara as variações da E5 passadas em `modelos_e5` (desempate entre elas).
     fontes, ext_tr, ext_val = fontes_de_treino()
     base = [n for n in nomes_dados.split("+") if n != "ext"]
+    fabricas = fabricas_modelo()
     for fora_fake, fora_true in (("E-farsas", "Agência Brasil"), ("Boatos.org", "G1")):
         tr = ext_tr[~ext_tr["fonte"].isin([fora_fake, fora_true])]
         val = pd.concat([ext_tr, ext_val])
@@ -252,6 +254,11 @@ def etapa_fontes(nomes_dados):
                 continue
             X, y = juntar(fontes_local, nomes)
             avaliar(treinar(X, y), val, f"{'+'.join(nomes)} | sem {fora_fake}/{fora_true} no treino",
+                    "E6 fontes", obs=f"valida só em {fora_fake} e {fora_true} (treino+val)")
+        X, y = juntar(fontes_local, base + ["ext"])
+        for nome_modelo in modelos_e5:
+            avaliar(treinar(X, y, fabrica=fabricas[nome_modelo]), val,
+                    f"{'+'.join(base + ['ext'])} {nome_modelo} | sem {fora_fake}/{fora_true} no treino",
                     "E6 fontes", obs=f"valida só em {fora_fake} e {fora_true} (treino+val)")
 
 
@@ -294,7 +301,7 @@ if __name__ == "__main__":
     elif etapa == "modelo":
         etapa_modelo(sys.argv[2])
     elif etapa == "fontes":
-        etapa_fontes(sys.argv[2])
+        etapa_fontes(sys.argv[2], sys.argv[3:])
     elif etapa == "preparar":
         preparar_corpus_externo()
     elif etapa == "base":

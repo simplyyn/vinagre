@@ -1,0 +1,603 @@
+<title>Vinagre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Literata:ital,opsz,wght@0,7..72,400..600;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: relatório de coluna única (~68ch) com figuras que podem alargar até 980px; cada seção = uma pergunta. */
+:root {
+  --papel: #f7f8f6;         /* fundo: papel frio, levemente esverdeado */
+  --folha: #ffffff;         /* superfície das figuras */
+  --tinta: #14181c;         /* texto principal */
+  --tinta-2: #4b5258;       /* texto secundário */
+  --tinta-3: #868d92;       /* rótulos de eixo */
+  --fio: #dde1de;           /* grade e divisórias */
+  --fio-forte: #b9bfbc;
+  --true: #2a78d6;          /* classe true */
+  --fake: #eb6834;          /* classe fake */
+  --destaque: #4a3aa7;      /* modelo escolhido */
+  --destaque-fundo: #ece9fb;
+  --empate: rgba(74, 58, 167, 0.09);
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --texto: "Literata", Georgia, "Times New Roman", serif;
+  --dado: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --papel: #121517; --folha: #1a1e21; --tinta: #eef1ef; --tinta-2: #b8bfbc; --tinta-3: #848b88;
+    --fio: #2a2f32; --fio-forte: #3b4245; --true: #3987e5; --fake: #d95926; --destaque: #9085e9;
+    --destaque-fundo: #262245; --empate: rgba(144, 133, 233, 0.12); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --papel: #121517; --folha: #1a1e21; --tinta: #eef1ef; --tinta-2: #b8bfbc; --tinta-3: #848b88;
+  --fio: #2a2f32; --fio-forte: #3b4245; --true: #3987e5; --fake: #d95926; --destaque: #9085e9;
+  --destaque-fundo: #262245; --empate: rgba(144, 133, 233, 0.12); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--papel); color: var(--tinta); font-family: var(--texto); font-size: 17px; line-height: 1.6;
+       padding-inline: 20px; }
+main { max-width: 980px; margin: 0 auto; padding-block: 48px 96px; display: grid; gap: 72px; }
+.col { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; font-stretch: 72%; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.6rem, 3.6vw, 2.2rem); font-weight: 700; font-stretch: 80%; }
+h3 { font-size: 1.05rem; font-weight: 650; font-stretch: 100%; }
+p { margin: 0; }
+section { display: grid; gap: 20px; }
+.rotulo { font-family: var(--display); font-size: 0.78rem; font-weight: 650; letter-spacing: 0.09em;
+          text-transform: uppercase; color: var(--tinta-2); font-stretch: 110%; }
+.etapa { font-family: var(--dado); font-size: 0.8rem; color: var(--destaque); }
+.lead { font-size: 1.2rem; color: var(--tinta-2); max-width: 60ch; }
+.nota { font-size: 0.92rem; color: var(--tinta-2); }
+strong { font-weight: 600; }
+code { font-family: var(--dado); font-size: 0.86em; background: var(--fio); padding: 1px 5px; border-radius: 3px; }
+
+/* Cabeçalho */
+header { display: grid; gap: 22px; padding-top: 16px; }
+.carimbos { display: flex; gap: 10px; flex-wrap: wrap; }
+.carimbo { font-family: var(--display); font-weight: 800; font-stretch: 125%; font-size: 0.8rem; letter-spacing: 0.14em;
+           padding: 4px 10px; border: 2px solid currentColor; border-radius: 3px; transform: rotate(-2deg); }
+.carimbo.f { color: var(--fake); } .carimbo.t { color: var(--true); transform: rotate(1.5deg); }
+
+/* Números de abertura */
+.placar { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; background: var(--fio);
+          border: 1px solid var(--fio); border-radius: 6px; overflow: hidden; }
+.placar > div { background: var(--folha); padding: 18px 20px; display: grid; gap: 4px; align-content: start; }
+.placar b { font-family: var(--display); font-size: 2.4rem; font-weight: 750; font-stretch: 85%; line-height: 1; }
+.placar span { font-size: 0.88rem; color: var(--tinta-2); line-height: 1.4; }
+.placar small { font-family: var(--dado); font-size: 0.75rem; color: var(--tinta-3); }
+
+/* Figuras */
+figure { margin: 0; background: var(--folha); border: 1px solid var(--fio); border-radius: 6px; padding: 20px 20px 16px;
+         display: grid; gap: 12px; }
+figcaption { font-size: 0.88rem; color: var(--tinta-2); max-width: 75ch; }
+figcaption b { color: var(--tinta); font-family: var(--display); font-weight: 650; }
+.grafico { overflow-x: auto; }
+.grafico svg { display: block; width: 100%; height: auto; min-width: 560px; }
+svg text { font-family: var(--dado); font-size: 11px; fill: var(--tinta-2); }
+svg .rot { font-family: var(--display); font-size: 12.5px; fill: var(--tinta); font-stretch: 90%; }
+svg .rot.esc { fill: var(--destaque); font-weight: 700; }
+svg .eixo { stroke: var(--fio-forte); stroke-width: 1; }
+svg .grade { stroke: var(--fio); stroke-width: 1; }
+svg .val { fill: var(--tinta); font-size: 11px; }
+svg [data-tip] { cursor: default; }
+.legenda { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--display); font-size: 0.85rem; color: var(--tinta-2); }
+.legenda i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.duas .grafico svg { min-width: 0; }
+.duas { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+
+/* Tabela */
+.tabela { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; min-width: 620px; }
+th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--fio); font-variant-numeric: tabular-nums; }
+th { font-family: var(--display); font-weight: 650; font-size: 0.78rem; color: var(--tinta-2); text-transform: uppercase;
+     letter-spacing: 0.05em; }
+td:first-child, th:first-child { text-align: left; }
+td { font-family: var(--dado); font-size: 0.82rem; }
+td:first-child { font-family: var(--display); font-size: 0.9rem; }
+tr.esc td { background: var(--destaque-fundo); }
+tr.esc td:first-child { color: var(--destaque); font-weight: 700; }
+
+/* Matriz de confusão */
+.matriz { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px; font-family: var(--display); max-width: 360px; }
+.matriz div { padding: 10px; text-align: center; font-size: 0.82rem; color: var(--tinta-2); }
+.matriz .c { font-family: var(--dado); font-size: 1.4rem; color: var(--tinta); border-radius: 4px; }
+.matriz .ok { background: var(--destaque-fundo); }
+.matriz .erro { background: var(--fio); }
+
+/* Exemplos */
+.exemplos { display: grid; gap: 12px; }
+.exemplo { border-left: 3px solid var(--fio-forte); padding: 4px 0 4px 16px; display: grid; gap: 6px; }
+.exemplo blockquote { margin: 0; font-style: italic; color: var(--tinta); font-size: 0.95rem; }
+.exemplo .meta { font-family: var(--dado); font-size: 0.76rem; color: var(--tinta-2); }
+.tag { font-family: var(--display); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.08em; padding: 1px 6px;
+       border-radius: 3px; border: 1.5px solid currentColor; }
+.tag.fake { color: var(--fake); } .tag.true { color: var(--true); }
+
+ul.limites { margin: 0; padding-left: 1.2em; display: grid; gap: 10px; }
+ul.limites li::marker { color: var(--tinta-3); }
+hr { border: 0; border-top: 1px solid var(--fio); margin: 0; }
+
+#tip { position: fixed; pointer-events: none; background: var(--tinta); color: var(--papel); font-family: var(--dado);
+       font-size: 12px; line-height: 1.45; padding: 7px 10px; border-radius: 4px; max-width: 300px; z-index: 10; }
+@media (max-width: 520px) { body { font-size: 16px; } main { gap: 56px; } figure { padding: 14px 12px; } }
+</style>
+
+<main>
+  <header>
+    <div class="carimbos"><span class="carimbo f">FAKE</span><span class="carimbo t">TRUE</span></div>
+    <h1>Vinagre: um classificador de notícias falsas que funcione fora do laboratório</h1>
+    <p class="lead">Residência em IA. Classificamos trechos de até 50 palavras de notícias em português como
+      <strong>true</strong> ou <strong>fake</strong>. O objetivo não foi maximizar a nota no Fake.br. Foi chegar a um modelo
+      que acerte em notícias reais de 2026, que nenhum modelo viu.</p>
+    <div class="placar" id="placar"></div>
+    <p class="nota">F1 macro = média do F1 das duas classes (não favorece a classe maior). Intervalos de 95% entre colchetes.
+      Testes avaliados <strong>uma única vez</strong>, com o modelo congelado antes.</p>
+  </header>
+
+  <section class="col">
+    <span class="rotulo">Como ler este relatório</span>
+    <h2>Quatro conjuntos de dados, quatro papéis</h2>
+    <p>Cada número aqui pertence a um protocolo, e números de protocolos diferentes não se comparam.</p>
+    <div class="tabela"><table>
+      <thead><tr><th>Conjunto</th><th>Papel</th><th>Tamanho</th></tr></thead>
+      <tbody>
+        <tr><td>Fake.br (2016–2018)</td><td>treino e referência interna</td><td>7.198</td></tr>
+        <tr><td>FakeRecogna 2.0</td><td>treino complementar</td><td>52.800</td></tr>
+        <tr><td>Corpus externo 2022–2026</td><td>treino (70%) e <strong>validação</strong> (30%): toda escolha</td><td>2.849</td></tr>
+        <tr><td>Testes externos 1 e 2</td><td><strong>só o resultado final</strong>, avaliados uma vez</td><td id="n-testes"></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">1 · O problema</span>
+      <h2>No Fake.br, o tamanho do texto já acerta 94%</h2>
+      <p>As notícias falsas do Fake.br têm em média 1.122 caracteres, e as verdadeiras, 6.675. Um classificador que olha
+        <strong>só o tamanho</strong> acerta 94,2%. A nota histórica de ~97% vinha em boa parte desse atalho. No produto, a
+        entrada é um trecho curto, então o atalho não existe.</p>
+    </div>
+    <div class="duas">
+      <figure>
+        <div class="grafico" id="g-tamanho"></div>
+        <figcaption><b>Tamanho do texto no Fake.br (caracteres).</b> Caixa = 25% a 75%, traço = mediana.
+          As distribuições quase não se sobrepõem.</figcaption>
+      </figure>
+      <figure>
+        <div class="grafico" id="g-trunc"></div>
+        <figcaption><b>Cortar todos os textos no mesmo tamanho neutraliza o atalho.</b> F1 macro na CV agrupada do Fake.br:
+          o "só tamanho" cai para ~56% (próximo do acaso), e o TF-IDF mantém 87–91%.</figcaption>
+      </figure>
+    </div>
+    <p class="col nota">Decisão: treinar com cada texto cortado em 30, 50 e 100 palavras. Treinado com o texto completo,
+      o modelo classificava quase todo trecho curto como fake (recall de true de 0,15% em 30 palavras).</p>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">2 · Dados <span class="etapa">E3 · E4</span></span>
+      <h2>O que mais ajudou foram dados no formato certo, não o modelo</h2>
+      <p>Mantivemos o mesmo modelo (TF-IDF + SVM linear) e variamos só os dados de treino. Coletamos um corpus externo de
+        2022–2026 das mesmas fontes do teste: boatos citados por Boatos.org e E-farsas, e o início de matérias do G1 e da
+        Agência Brasil. Esse corpus sozinho leva o F1 na validação de ~83 para ~88–90.</p>
+    </div>
+    <figure>
+      <div class="legenda"><span><i style="background:var(--tinta-3)"></i>sem corpus externo</span>
+        <span><i style="background:var(--true)"></i>com corpus externo</span>
+        <span><i style="background:var(--destaque)"></i>escolhido</span>
+        <span><i style="background:var(--empate);outline:1px solid var(--fio-forte)"></i>faixa de empate (2 pontos do melhor)</span></div>
+      <div class="grafico" id="g-dados"></div>
+      <figcaption><b>F1 macro na validação externa (855 itens), por combinação de dados.</b> fb = Fake.br; fr2021 =
+        FakeRecogna 2020–21; frall = FakeRecogna todos os anos; ext = corpus externo; x3/x5 = externo repetido.
+        Escolhemos <strong>fr2021 + ext</strong>: empata com o maior e é o mais simples.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">3 · Métodos <span class="etapa">E5 · E7</span></span>
+      <h2>Doze variações de TF-IDF e dois modelos de embeddings: quase tudo empata</h2>
+      <p>Com os dados fixos, variamos a representação do texto e o classificador. Todos ficam entre 89 e 92, exceto o MiniLM.
+        Os n-gramas de <strong>caracteres</strong> ficam no topo: boatos têm grafia, pontuação e erros próprios. O embedding
+        e5-small empata com eles.</p>
+    </div>
+    <figure>
+      <div class="grafico" id="g-metodos"></div>
+      <figcaption><b>F1 macro na validação externa, por método.</b> Diferenças menores que 1–2 pontos são empate
+        (testamos ~40 configurações na mesma validação). Para desempatar, usamos a robustez entre fontes (próxima seção).</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">4 · Robustez <span class="etapa">E6</span></span>
+      <h2>Em fontes que o modelo nunca viu, a nota cai ~10 pontos</h2>
+      <p>Treinamos sem uma fonte de cada classe e avaliamos só nelas. Com isso, separamos o "boato × jornalismo" da
+        assinatura de cada site. O corpus externo continua ajudando (+3 a +5), então não é só assinatura de site. Mas a queda
+        de ~90 para ~80 mostra que parte do resultado é. O TF-IDF de caracteres foi o único do topo que nunca perdeu para a base.</p>
+    </div>
+    <figure>
+      <div class="legenda" id="leg-fontes"></div>
+      <div class="grafico" id="g-fontes"></div>
+      <figcaption><b>F1 macro em fontes deixadas fora do treino.</b> O cenário da esquerda tem só 215 itens (112 E-farsas e
+        103 Agência Brasil), por isso diferenças de 3 pontos ainda são frágeis.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">5 · Uma hipótese <span class="etapa">E8</span></span>
+      <h2>Notícia verdadeira tem mais números?</h2>
+      <p>A hipótese: notícia verdadeira cita mais datas, valores e quantidades, porque trata de fatos exatos. Medimos a
+        <strong>proporção de palavras que são número</strong>. Num trecho curto, essa proporção é instável (1 número em 8 palavras
+        = 12,5%), então também testamos uma versão suavizada, que só confia no percentual quando há palavras suficientes.</p>
+    </div>
+    <div class="duas">
+      <figure>
+        <div class="legenda"><span><i style="background:var(--fake)"></i>fake</span><span><i style="background:var(--true)"></i>true</span></div>
+        <div class="grafico" id="g-num"></div>
+        <figcaption><b>% das palavras que são número, por classe (trechos de 50 palavras).</b> A hipótese se confirma nos três
+          corpora. No corpus externo, ela vale também em cada uma das quatro fontes.</figcaption>
+      </figure>
+      <figure>
+        <div class="grafico" id="g-num-modelo"></div>
+        <figcaption><b>Mas ela não acrescenta nada ao TF-IDF.</b> F1 na validação. Sozinha, a feature chega a ~69. Junto do
+          TF-IDF, o SVM deu a ela peso ~0, porque o TF-IDF já "vê" os números ("2026", "14h30", "milhões").</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">6 · Resultado final</span>
+      <h2>Em notícias reais de 2026: F1 de 94, e nenhuma notícia verdadeira marcada como falsa</h2>
+      <p>Avaliamos os oito métodos <strong>uma única vez</strong>, com os modelos congelados antes, em dois testes coletados
+        automaticamente por RSS. O <strong>teste 1</strong> (39 itens) é de 30/09. O <strong>teste 2</strong> (77 itens) foi
+        coletado depois de todo o resto, com notícias da semana da eleição (28/09 a 05/10), que nenhum modelo viu.</p>
+      <p>O modelo escolhido teve o maior F1 nos dois testes juntos. Mas, com 116 itens, os intervalos de confiança se
+        sobrepõem com os outros modelos treinados no corpus externo e também com os modelos antigos. O teste <strong>confirma
+        a direção</strong> da validação, mas sozinho não prova que um método é melhor que o outro.</p>
+      <p>O padrão mais claro está nos erros. O escolhido acertou <strong>todas as 85 notícias verdadeiras</strong>, e os
+        5 erros são todos boatos que passaram como verdadeiros.</p>
+    </div>
+    <figure>
+      <div class="legenda"><span><i style="background:var(--tinta-2)"></i>F1 macro com IC 95% (bootstrap)</span>
+        <span><i style="background:var(--destaque)"></i>escolhido</span></div>
+      <div class="grafico" id="g-teste"></div>
+      <figcaption><b>F1 macro nos testes externos, por método.</b> As barras são o intervalo de 95%. Quando elas se sobrepõem,
+        não dá para declarar vencedor.</figcaption>
+    </figure>
+    <div class="duas">
+      <figure>
+        <h3>Matriz de confusão do modelo escolhido (testes 1 + 2)</h3>
+        <div class="matriz" id="matriz"></div>
+        <figcaption>Linhas = classe real; colunas = previsão.</figcaption>
+      </figure>
+      <figure>
+        <h3>Acerto por fonte do modelo escolhido</h3>
+        <div class="grafico" id="g-fonte-teste"></div>
+        <figcaption>Fontes com poucos itens (n pequeno) têm intervalo de confiança grande.</figcaption>
+      </figure>
+    </div>
+    <figure>
+      <h3>Todos os métodos, todas as métricas</h3>
+      <div class="tabela" id="tabela-teste"></div>
+    </figure>
+  </section>
+
+  <section class="col">
+    <span class="rotulo">7 · Onde erra</span>
+    <h2>Erros do modelo escolhido nos testes</h2>
+    <p>Trechos exatamente como o modelo os recebeu (até 50 palavras). Os boatos que passam são escritos como notícia
+      ("tomou posse na presidência do TSE") ou como história emocional, sem CAIXA ALTA, sem "URGENTE" e sem os outros
+      marcadores de boato de WhatsApp. É o limite esperado de um modelo que aprende estilo de redação.</p>
+    <div class="exemplos" id="erros"></div>
+  </section>
+
+  <section class="col">
+    <span class="rotulo">8 · Limites</span>
+    <h2>O que este resultado não mostra</h2>
+    <ul class="limites">
+      <li><strong>O modelo aprende estilo de redação, não veracidade.</strong> Ele separa "boato de WhatsApp citado por agência"
+        de "texto jornalístico profissional". Uma notícia falsa escrita no padrão jornalístico tende a passar.</li>
+      <li><strong>Possível atalho de época.</strong> No corpus externo, as fake de treino vão até jul/2026 e as true são de
+        ago–out/2026. O modelo pode estar usando "assunto do momento". Os testes têm a mesma estrutura, então não detectam isso.</li>
+      <li><strong>Assinatura de site.</strong> Em fontes novas a nota cai ~10 pontos (seção 4).</li>
+      <li><strong>Testes pequenos.</strong> Com 116 itens (31 fake), o intervalo do F1 ainda tem ~10 pontos. O E-farsas tem
+        um único item nos testes (o boato costuma ser imagem ou vídeo, sem texto) e todas as outras fake vêm do Boatos.org.</li>
+      <li><strong>Ruído no treino.</strong> Na conferência do teste 2 achamos 42 anúncios do G1 ("especial publicitário")
+        marcados como true no corpus externo. Eles foram removidos dos testes, mas continuam no treino e na validação.</li>
+      <li><strong>Seleção otimista.</strong> Testamos ~40 configurações na mesma validação, então a nota de validação do
+        escolhido é otimista. Por isso o teste existe.</li>
+    </ul>
+  </section>
+
+  <section class="col">
+    <span class="rotulo">Conclusão</span>
+    <h2>O que levamos daqui</h2>
+    <ul class="limites">
+      <li><strong>O principal fator foram os dados.</strong> Trocar o Fake.br de 2016 por um corpus no formato do produto
+        (boato citado × início de matéria) levou a validação de ~83 para ~90. A troca de modelo rendeu ~1 ponto.</li>
+      <li><strong>Modelo final:</strong> TF-IDF de n-gramas de caracteres (2 a 5) + SVM linear, treinado em FakeRecogna
+        2020–21 + corpus externo, com trechos de 30, 50 e 100 palavras. Escolhido na validação, por empate técnico com o
+        melhor e por ser o mais robusto em fontes novas.</li>
+      <li><strong>Desempenho estimado:</strong> F1 ~94 [89–99] em notícias das mesmas fontes na semana seguinte ao treino.
+        Em fontes que o modelo nunca viu, esperamos ~80.</li>
+      <li><strong>A hipótese dos números</strong> se confirmou como observação, mas não melhora
+        o modelo, porque o TF-IDF já captura essa informação. No corpus externo, as true têm ~2× mais números.</li>
+      <li><strong>Uso responsável:</strong> o modelo serve como triagem de "cara de boato", não como checagem de fatos.
+        Um boato escrito como notícia passa.</li>
+    </ul>
+  </section>
+</main>
+<div id="tip" hidden></div>
+
+<script>
+const D = /*__DADOS__*/null;
+const ESC = "TF-IDF caracteres [ESCOLHIDO]";
+const NS = "http://www.w3.org/2000/svg";
+const fmt = (v, c = 1) => v == null ? "–" : v.toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c });
+
+// SVG helper
+function el(tag, attrs = {}, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svg(id, w, h) {
+  const s = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img" });
+  document.getElementById(id).appendChild(s);
+  return s;
+}
+
+// Tooltip compartilhado: qualquer marca com data-tip.
+const tip = document.getElementById("tip");
+document.addEventListener("pointermove", ev => {
+  const t = ev.target.closest && ev.target.closest("[data-tip]");
+  if (!t) { tip.hidden = true; return; }
+  tip.textContent = t.getAttribute("data-tip");
+  tip.hidden = false;
+  const x = Math.min(ev.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + "px"; tip.style.top = (ev.clientY + 14) + "px";
+});
+
+// Eixo horizontal com grade.
+function eixoX(s, x0, x1, y0, y1, min, max, passo, sufixo = "") {
+  const X = v => x0 + (v - min) / (max - min) * (x1 - x0);
+  for (let v = min; v <= max + 1e-9; v += passo) {
+    el("line", { x1: X(v), x2: X(v), y1: y0, y2: y1, class: "grade" }, s);
+    el("text", { x: X(v), y: y1 + 16, "text-anchor": "middle" }, s, fmt(v, 0) + sufixo);
+  }
+  return X;
+}
+
+// Gráfico de pontos horizontal (F1 por item), com faixa de empate.
+function pontos(id, linhas, { min, max, passo, empate = 0, rotW = 260, w = 900 }) {
+  const lh = 26, top = 8, h = top + linhas.length * lh + 30;
+  const s = svg(id, w, h);
+  const x0 = rotW, x1 = w - 60, y1 = top + linhas.length * lh;
+  const X = eixoX(s, x0, x1, top, y1, min, max, passo);
+  if (empate) {
+    const melhor = Math.max(...linhas.map(l => l.v));
+    el("rect", { x: X(melhor - empate), y: top, width: X(melhor) - X(melhor - empate), height: y1 - top, fill: "var(--empate)" }, s);
+  }
+  linhas.forEach((l, i) => {
+    const y = top + i * lh + lh / 2;
+    el("text", { x: x0 - 12, y: y + 4, "text-anchor": "end", class: "rot" + (l.esc ? " esc" : "") }, s, l.rot);
+    el("line", { x1: x0, x2: X(l.v), y1: y, y2: y, stroke: "var(--fio)", "stroke-width": 1 }, s);
+    const g = el("g", { "data-tip": l.tip || `${l.rot}: ${fmt(l.v, 2)}` }, s);
+    el("rect", { x: x0, y: y - lh / 2, width: x1 - x0, height: lh, fill: "transparent" }, g);
+    el("circle", { cx: X(l.v), cy: y, r: l.esc ? 6.5 : 5, fill: l.cor, stroke: "var(--folha)", "stroke-width": 2 }, g);
+    el("text", { x: X(l.v) + 11, y: y + 4, class: "val" }, g, fmt(l.v));
+  });
+}
+
+// Placar de abertura (testes 1 + 2, modelo escolhido x melhor modelo antigo).
+function placar() {
+  const t = D.teste.filter(r => r.teste === "Testes 1 + 2");
+  const esc = t.find(r => r.metodo === ESC);
+  const cand = t.find(r => r.metodo.startsWith("Fake.br + FakeRecogna"));
+  const ant = t.find(r => r.metodo.startsWith("Fake.br (modelo_final"));
+  const cel = (num, txt, ic) => `<div><b>${num}</b><span>${txt}</span>${ic ? `<small>${ic}</small>` : ""}</div>`;
+  document.getElementById("placar").innerHTML =
+    cel(fmt(esc.f1_macro), "F1 macro do modelo escolhido nos testes externos", `IC 95% [${fmt(esc.f1_ic_baixo, 0)}–${fmt(esc.f1_ic_alto, 0)}] · n=${esc.n}`) +
+    cel(fmt(cand.f1_macro), "F1 do melhor modelo anterior (Fake.br + FakeRecogna)", `IC 95% [${fmt(cand.f1_ic_baixo, 0)}–${fmt(cand.f1_ic_alto, 0)}]`) +
+    cel(fmt(ant.f1_macro), "F1 do modelo treinado só no Fake.br", `IC 95% [${fmt(ant.f1_ic_baixo, 0)}–${fmt(ant.f1_ic_alto, 0)}]`) +
+    cel(fmt(esc.recall_fake, 0) + "% · " + fmt(esc.recall_true, 0) + "%", "das fake e das true reconhecidas (escolhido)", `bal. acc ${fmt(esc.bal_acc)}`);
+  const n = D.n_testes.reduce((a, r) => a + r.n, 0);
+  document.getElementById("n-testes").textContent = n.toLocaleString("pt-BR");
+}
+
+// 1. Caixas de tamanho.
+function grTamanho() {
+  const s = svg("g-tamanho", 520, 170), x0 = 60, x1 = 500;
+  const X = eixoX(s, x0, x1, 10, 130, 0, 9000, 3000);
+  [["fake", 40], ["true", 95]].forEach(([c, y]) => {
+    const [q1, med, q3, media] = D.historico.tamanho[c];
+    el("text", { x: x0 - 10, y: y + 4, "text-anchor": "end", class: "rot" }, s, c);
+    const g = el("g", { "data-tip": `${c}: 25% ${q1} · mediana ${med} · 75% ${q3} · média ${media} caracteres` }, s);
+    el("rect", { x: X(q1), y: y - 16, width: X(q3) - X(q1), height: 32, rx: 3, fill: `var(--${c})`, opacity: 0.85 }, g);
+    el("line", { x1: X(med), x2: X(med), y1: y - 16, y2: y + 16, stroke: "var(--folha)", "stroke-width": 2.5 }, g);
+    el("text", { x: X(q3) + 8, y: y + 4, class: "val" }, g, `mediana ${med.toLocaleString("pt-BR")}`);
+  });
+}
+
+// 1. Barras do truncamento.
+function grTrunc() {
+  const s = svg("g-trunc", 520, 200), x0 = 40, x1 = 510, top = 10, base = 160;
+  const Y = v => base - v / 100 * (base - top);
+  [0, 25, 50, 75, 100].forEach(v => {
+    el("line", { x1: x0, x2: x1, y1: Y(v), y2: Y(v), class: "grade" }, s);
+    el("text", { x: x0 - 8, y: Y(v) + 4, "text-anchor": "end" }, s, v);
+  });
+  const grupos = D.historico.truncamento, gw = (x1 - x0) / grupos.length, bw = 34;
+  grupos.forEach((g, i) => {
+    const cx = x0 + gw * i + gw / 2;
+    [["so_tamanho", "var(--tinta-3)", "só tamanho"], ["tfidf", "var(--destaque)", "TF-IDF"]].forEach(([k, cor, nome], j) => {
+      const x = cx + (j ? 3 : -bw - 3), v = g[k];
+      const r = el("g", { "data-tip": `${nome}, N=${g.N}: F1 ${fmt(v, 2)}` }, s);
+      el("path", { d: barraV(x, Y(v), bw, base - Y(v)), fill: cor }, r);
+      el("text", { x: x + bw / 2, y: Y(v) - 6, "text-anchor": "middle", class: "val" }, r, fmt(v, 0));
+    });
+    el("text", { x: cx, y: base + 18, "text-anchor": "middle", class: "rot" }, s, `${g.N} palavras`);
+  });
+  el("line", { x1: x0, x2: x1, y1: base, y2: base, class: "eixo" }, s);
+  el("text", { x: x1, y: 194, "text-anchor": "end" }, s, "cinza = só tamanho · roxo = TF-IDF");
+}
+// Barra vertical com cantos arredondados só no topo (4px).
+function barraV(x, y, w, h) {
+  const r = Math.min(4, h);
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+
+// 2. Dados.
+function grDados() {
+  const ord = [...D.e4].sort((a, b) => b.f1_macro - a.f1_macro);
+  pontos("g-dados", ord.map(r => {
+    const esc = r.experimento === "fr2021 + ext";
+    return { rot: r.experimento, v: r.f1_macro, esc,
+             cor: esc ? "var(--destaque)" : r.experimento.includes("ext") ? "var(--true)" : "var(--tinta-3)",
+             tip: `${r.experimento}: F1 ${fmt(r.f1_macro, 2)} · recall fake ${fmt(r.recall_fake)} · recall true ${fmt(r.recall_true)}` };
+  }), { min: 65, max: 95, passo: 5, empate: 2, rotW: 250 });
+}
+
+// 3. Métodos.
+function grMetodos() {
+  const nomes = { "word(1,2) C=1 [base]": "TF-IDF palavras [base]", "char_wb(2,5)": "TF-IDF caracteres" };
+  const l = [...D.e5.map(r => ({ rot: nomes[r.experimento] || "TF-IDF " + r.experimento, v: r.f1_macro, ori: r })),
+             ...D.e7.filter(r => r.experimento.endsWith("C=10")).map(r => ({ rot: r.experimento.replace("emb ", "embeddings ").replace(" + LogReg C=10", ""), v: r.f1_macro, ori: r }))]
+    .sort((a, b) => b.v - a.v)
+    .map(x => ({ ...x, esc: x.rot === "TF-IDF caracteres", cor: x.rot === "TF-IDF caracteres" ? "var(--destaque)" : x.rot.startsWith("embeddings") ? "var(--fake)" : "var(--tinta-2)",
+                 tip: `${x.rot}: F1 ${fmt(x.v, 2)} · recall fake ${fmt(x.ori.recall_fake)} · recall true ${fmt(x.ori.recall_true)}` }));
+  pontos("g-metodos", l, { min: 80, max: 95, passo: 5, empate: 2, rotW: 330 });
+}
+
+// 4. Fontes (barras agrupadas por cenário).
+function grFontes() {
+  const series = [["fr2021 |", "só FakeRecogna (sem externo)", "var(--tinta-3)"],
+                  ["fr2021+ext |", "+ externo, TF-IDF palavras", "var(--true)"],
+                  ["fr2021+ext char_wb(2,5) |", "+ externo, TF-IDF caracteres", "var(--destaque)"],
+                  ["fr2021+ext word(1,2) + char_wb(2,5) sem lowercase |", "+ externo, palavras + caracteres", "var(--fake)"]];
+  document.getElementById("leg-fontes").innerHTML = series.map(s => `<span><i style="background:${s[2]}"></i>${s[1]}</span>`).join("");
+  const cen = [["sem E-farsas/Agência Brasil", "fontes novas: E-farsas e Agência Brasil"], ["sem Boatos.org/G1", "fontes novas: Boatos.org e G1"]];
+  const s = svg("g-fontes", 900, 230), x0 = 40, x1 = 890, top = 14, base = 186, min = 70, max = 85;
+  const Y = v => base - (v - min) / (max - min) * (base - top);
+  for (let v = min; v <= max; v += 5) {
+    el("line", { x1: x0, x2: x1, y1: Y(v), y2: Y(v), class: "grade" }, s);
+    el("text", { x: x0 - 8, y: Y(v) + 4, "text-anchor": "end" }, s, v);
+  }
+  const gw = (x1 - x0) / 2, bw = 56, gap = 6;
+  cen.forEach(([chave, nome], i) => {
+    const cx = x0 + gw * i + gw / 2, total = series.length * bw + (series.length - 1) * gap;
+    series.forEach(([pref, rot, cor], j) => {
+      const r = D.e6.find(r => r.experimento.startsWith(pref) && r.experimento.includes(chave));
+      if (!r) return;
+      const x = cx - total / 2 + j * (bw + gap), v = r.f1_macro;
+      const g = el("g", { "data-tip": `${rot} — ${nome}: F1 ${fmt(v, 2)}` }, s);
+      el("path", { d: barraV(x, Y(v), bw, base - Y(v)), fill: cor }, g);
+      el("text", { x: x + bw / 2, y: Y(v) - 6, "text-anchor": "middle", class: "val" }, g, fmt(v));
+    });
+    el("text", { x: cx, y: base + 20, "text-anchor": "middle", class: "rot" }, s, nome);
+  });
+  el("line", { x1: x0, x2: x1, y1: base, y2: base, class: "eixo" }, s);
+  el("text", { x: x0, y: 224 }, s, "eixo começa em 70 para mostrar as diferenças");
+}
+
+// 5. Números.
+function grNum() {
+  const s = svg("g-num", 520, 190), x0 = 150, x1 = 500;
+  const X = eixoX(s, x0, x1, 6, 150, 0, 6, 2, "%");
+  D.numeros.forEach((r, i) => {
+    const y = 20 + i * 44;
+    el("text", { x: x0 - 10, y: y + 13, "text-anchor": "end", class: "rot" }, s, r.corpus);
+    [["fake", 0], ["true", 15]].forEach(([c, dy]) => {
+      const g = el("g", { "data-tip": `${r.corpus}, ${c}: ${fmt(r[c], 2)}% das palavras são número (AUC ${fmt(r.auc, 2)})` }, s);
+      el("rect", { x: x0, y: y + dy, width: X(r[c]) - x0, height: 12, rx: 2, fill: `var(--${c})` }, g);
+      el("text", { x: X(r[c]) + 6, y: y + dy + 10, class: "val" }, g, fmt(r[c]) + "%");
+    });
+  });
+}
+function grNumModelo() {
+  const nomes = { "só números: categorias": "só números", "TF-IDF [base]": "TF-IDF palavras", "TF-IDF + categorias (peso 1)": "TF-IDF + números",
+                  "só tamanho (controle)": "só tamanho (controle)" };
+  const l = D.e8.filter(r => nomes[r.experimento]).map(r => ({ rot: nomes[r.experimento], v: r.f1_macro,
+    cor: r.experimento.startsWith("TF-IDF") ? "var(--true)" : "var(--tinta-3)" })).sort((a, b) => b.v - a.v);
+  pontos("g-num-modelo", l, { min: 40, max: 100, passo: 20, rotW: 170, w: 520 });
+}
+
+// 6. Teste final: pontos com IC.
+function grTeste() {
+  const testes = ["Teste 1 (30/09)", "Teste 2 (02–05/10)", "Testes 1 + 2"];
+  const metodos = [...new Set(D.teste.map(r => r.metodo))];
+  const colW = 200, rotW = 300, lh = 30, top = 30, w = rotW + colW * 3 + 10, h = top + metodos.length * lh + 30;
+  const s = svg("g-teste", w, h), min = 30, max = 100;
+  testes.forEach((t, k) => {
+    const x0 = rotW + k * colW + 10, x1 = x0 + colW - 24;
+    const X = v => x0 + (Math.max(min, v) - min) / (max - min) * (x1 - x0);
+    const nT = D.teste.find(r => r.teste === t).n;
+    el("text", { x: (x0 + x1) / 2, y: 14, "text-anchor": "middle", class: "rot" }, s, `${t} · n=${nT}`);
+    [40, 60, 80, 100].forEach(v => {
+      el("line", { x1: X(v), x2: X(v), y1: top, y2: top + metodos.length * lh, class: "grade" }, s);
+      el("text", { x: X(v), y: top + metodos.length * lh + 16, "text-anchor": "middle" }, s, v);
+    });
+    metodos.forEach((m, i) => {
+      const r = D.teste.find(r => r.metodo === m && r.teste === t), y = top + i * lh + lh / 2, esc = m === ESC;
+      const cor = esc ? "var(--destaque)" : "var(--tinta-2)";
+      const g = el("g", { "data-tip": `${m} — ${t}: F1 ${fmt(r.f1_macro)} [${fmt(r.f1_ic_baixo, 0)}–${fmt(r.f1_ic_alto, 0)}] · recall fake ${fmt(r.recall_fake, 0)}% · recall true ${fmt(r.recall_true, 0)}%` }, s);
+      el("rect", { x: x0, y: y - lh / 2, width: x1 - x0, height: lh, fill: "transparent" }, g);
+      el("line", { x1: X(r.f1_ic_baixo), x2: X(r.f1_ic_alto), y1: y, y2: y, stroke: cor, "stroke-width": 2, "stroke-linecap": "round", opacity: esc ? 1 : 0.55 }, g);
+      el("circle", { cx: X(r.f1_macro), cy: y, r: esc ? 6 : 4.5, fill: cor, stroke: "var(--folha)", "stroke-width": 2 }, g);
+    });
+  });
+  metodos.forEach((m, i) => el("text", { x: rotW - 6, y: top + i * lh + lh / 2 + 4, "text-anchor": "end", class: "rot" + (m === ESC ? " esc" : "") }, s,
+    m.replace(" [ESCOLHIDO]", " ★")));
+}
+
+function matriz() {
+  const r = D.teste.find(r => r.metodo === ESC && r.teste === "Testes 1 + 2");
+  document.getElementById("matriz").innerHTML =
+    `<div></div><div>previsto fake</div><div>previsto true</div>
+     <div>real fake</div><div class="c ok">${r.fake_como_fake}</div><div class="c erro">${r.fake_como_true}</div>
+     <div>real true</div><div class="c erro">${r.true_como_fake}</div><div class="c ok">${r.true_como_true}</div>`;
+}
+
+function grFonteTeste() {
+  const r = D.teste.find(r => r.metodo === ESC && r.teste === "Testes 1 + 2");
+  const fontes = Object.keys(r).filter(k => k.startsWith("acerto_") && r[k] != null).map(k => k.slice(7));
+  const cls = f => (f === "G1" || f === "Agência Brasil") ? "true" : "fake";
+  const s = svg("g-fonte-teste", 520, 40 + fontes.length * 36), x0 = 150, x1 = 470;
+  const X = eixoX(s, x0, x1, 6, 10 + fontes.length * 36, 0, 100, 25, "%");
+  fontes.forEach((f, i) => {
+    const y = 14 + i * 36, v = r["acerto_" + f], n = r["n_" + f];
+    el("text", { x: x0 - 10, y: y + 13, "text-anchor": "end", class: "rot" }, s, `${f} (n=${n})`);
+    const g = el("g", { "data-tip": `${f} (${cls(f)}): ${fmt(v)}% de acerto em ${n} itens` }, s);
+    el("rect", { x: x0, y, width: Math.max(2, X(v) - x0), height: 18, rx: 3, fill: `var(--${cls(f)})` }, g);
+    el("text", { x: X(v) + 6, y: y + 13, class: "val" }, g, fmt(v, 0) + "%");
+  });
+}
+
+function tabelaTeste() {
+  const rows = D.teste.map(r => `<tr class="${r.metodo === ESC ? "esc" : ""}"><td>${r.metodo.replace(" [ESCOLHIDO]", " ★")}</td><td>${r.teste}</td>
+    <td>${fmt(r.f1_macro)} <span style="color:var(--tinta-3)">[${fmt(r.f1_ic_baixo, 0)}–${fmt(r.f1_ic_alto, 0)}]</span></td>
+    <td>${fmt(r.accuracy)} <span style="color:var(--tinta-3)">[${fmt(r.acc_ic_baixo, 0)}–${fmt(r.acc_ic_alto, 0)}]</span></td>
+    <td>${fmt(r.bal_acc)}</td><td>${fmt(r.recall_fake)}</td><td>${fmt(r.recall_true)}</td></tr>`).join("");
+  document.getElementById("tabela-teste").innerHTML = `<table><thead><tr><th>Método</th><th>Teste</th><th>F1 macro [IC]</th>
+    <th>Accuracy [IC]</th><th>Bal. acc</th><th>Recall fake</th><th>Recall true</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function erros() {
+  const box = document.getElementById("erros");
+  box.innerHTML = D.erros.map(e => `<div class="exemplo">
+    <div class="meta"><span class="tag ${e.label}">${e.label.toUpperCase()}</span> previsto como
+      <span class="tag ${e.previsto}">${e.previsto.toUpperCase()}</span> · ${e.fonte} · ${e.teste}</div>
+    <blockquote>“${e.texto_50}”</blockquote></div>`).join("") || "<p>Nenhum erro.</p>";
+}
+
+placar(); grTamanho(); grTrunc(); grDados(); grMetodos(); grFontes(); grNum(); grNumModelo();
+grTeste(); matriz(); grFonteTeste(); tabelaTeste(); erros();
+</script>

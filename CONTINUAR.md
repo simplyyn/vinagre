@@ -29,7 +29,25 @@ O scikit-learn **tem que ser 1.6.1** (versão em que os `.joblib` foram salvos).
   `fr2021 + ext` (90,47), `frall + ext x5` (90,09); peso do externo muda < 1 ponto. **Não rode `dados` de novo**
   (duplicaria linhas no CSV).
 
-## 2.1 O que fazer amanhã (em ordem)
+## 2.0 Estado em 05/10/2026 (mais recente)
+
+- Ambiente recriado em outro PC (controles iguais ao E0).
+- Feitos: escolha de dados (`fr2021+ext`), **E5**, **E6** (agora também compara modelos da E5), **E7** e **E8**
+  (feature de números: não entra). Análise e escolha registradas no `EXPERIMENTOS.md`.
+- **Modelo escolhido:** `fr2021+ext`, TF-IDF `char_wb(2,5)` + LinearSVC balanceado, treino misto. Salvo em
+  `modelos_finais/03.joblib` (os 8 métodos avaliados estão em `modelos_finais/`, ordem do `avaliacao_final.py`).
+- **Avaliação final FEITA (autorizada):** teste 1 (39) + teste 2 novo (77, `teste2_2026.csv`). Escolhido: F1 94,2
+  [89–99] nos dois juntos. Detalhes no `EXPERIMENTOS.md`. **Os testes não podem mais ser usados para escolher nada.**
+- Teste manual (demonstração): `testar_noticia.py` (interativo, texto como argumento ou `--arquivo`; `--emb` inclui
+  os embeddings). Mostra a previsão de vários modelos lado a lado. Não serve para escolher modelo.
+  Versão no navegador: `testador_web.py [--emb]` e abrir http://127.0.0.1:8000 (cola a notícia e clica em Analisar).
+- Relatório da apresentação: `relatorio.html` (gerado por `dados_relatorio.py` a partir de `relatorio_modelo.html`).
+- Não rodar de novo `modelo`, `fontes`, `embeddings`, `exp_numeros.py modelo/fontes` (duplicaria linhas no CSV) nem
+  `coletar_teste2.py` (mudaria o teste 2).
+- Próximo: escrever o relatório final; opcional, limpar os 42 especiais publicitários do corpus externo (exigiria
+  nova validação e um teste novo).
+
+## 2.1 O que fazer amanhã (em ordem) — versão de 01/10 (passos 3 a 7 feitos em 05/10)
 
 1. Conferir o ambiente: `.venv\Scripts\python.exe -c "import sklearn; print(sklearn.__version__)"` → 1.6.1.
 2. ~~Terminar a E4~~ (feito).
