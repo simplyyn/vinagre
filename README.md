@@ -110,13 +110,15 @@ Primeira tarefa:
 - Anos (extraídos de `Data` ou da URL; 18,4% sem ano): **as true estão ~95% em 2020–2021**, enquanto as fake vão de 2013 a 2023. **Só 2020 e 2021 têm as duas classes em quantidade.**
 - A versão 1 do FakeRecogna (`recogna-nlp/FakeRecogna`) foi **descartada**: o texto é lematizado e sem stopwords.
 
-### 3.3 Teste externo final (pendente)
+### 3.3 Teste externo final (avaliado em 05/10/2026)
 
 - `teste_externo_2026.csv`: coletado automaticamente via RSS, sempre com os itens mais recentes, **sem escolha manual**:
   - true: Agência Brasil e G1 (início da matéria, até 60 palavras);
   - fake: Boatos.org e E-farsas (maior `blockquote` da página, que é o boato citado, até 60 palavras).
 - Colunas: `texto`, `label`, `fonte`, `link`, `data`.
-- **Status: coleta a executar/conferir. NÃO avaliado.**
+- **Status:** coletado (39 itens), conferido e **avaliado uma única vez em 05/10/2026**, junto com um 2º teste
+  (`teste2_2026.csv`, 77 itens, notícias de 28/09 a 05/10; `coletar_teste2.py` + `conferir_teste2.py`). Resultados
+  na seção 5.11 e no `EXPERIMENTOS.md`. Os dois testes não podem mais ser usados para escolher nada.
 - Conferência permitida **antes** da avaliação: remover linhas apenas por conteúdo (trecho de fake que é descrição da agência; trecho de true que é lixo da página). **Nunca** por previsão do modelo.
 - Ressalvas: o G1 é fonte de true no Fake.br (reportar as fontes separadamente); o Boatos.org é agência do FakeRecogna (usado no treino do candidato, mas em outro período).
 
@@ -171,7 +173,11 @@ cv = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
 
 - `modelo_final_fakebr.joblib`: TF-IDF word (1,2) + LinearSVC C=1, treino misto 30/50/100 em **todo o Fake.br**.
 - `modelo_candidato_fakebr_fakerecogna.joblib`: mesmo modelo com `class_weight="balanced"`, treino misto em Fake.br completo + FakeRecogna **2020–2021** (fake dos tipos `boato_citado` e `outros`, sem `texto_checagem`, e o mesmo número de true resumidas amostradas com `random_state=42`).
-- Uso no produto: cortar a entrada em até 50 palavras e aplicar `decision_function` (≥ 0 → true).
+- **`modelos_finais/03.joblib` (MODELO ESCOLHIDO, 05/10/2026):** TF-IDF `char_wb(2,5)` (200k features, sublinear) +
+  LinearSVC C=1 balanceado, treino misto em FakeRecogna 2020–21 + treino do corpus externo (`fr2021 + ext`). Os demais
+  arquivos de `modelos_finais/` são os outros métodos da avaliação final (ordem do `avaliacao_final.py`).
+- Uso no produto: cortar a entrada em até 50 palavras e aplicar `decision_function` (≥ 0 → true). Demonstração:
+  `testador_web.py` (navegador) ou `testar_noticia.py` (terminal).
 
 ---
 
@@ -276,22 +282,39 @@ Pesos do stacking: TF-IDF 4,359 e features 0,282. **Decisão: modelo final só c
 - **V1 adotada**: ganho de ~14 pontos no FR2021 sem perda no controle Fake.br. Parte do ganho **pode** ser estilo do resumidor (as true de 2021 também são resumos). Só o teste externo com true originais resolve essa dúvida.
 - V1b ≈ V1: filtrar fake descritivas não reduziu o efeito da checagem.
 
+### 5.11 Fase de generalização externa (30/09–05/10/2026; detalhes no `EXPERIMENTOS.md`)
+
+- **Corpus externo** 2022–2026 (Boatos.org, E-farsas, G1, Agência Brasil; 2.849 itens; 70% treino / 30% validação):
+  formato do produto (boato citado × início de matéria). Toda escolha desta fase usa essa validação.
+- **Dados (E4):** o corpus externo é o que mais ajuda: validação de ~83 (candidato) para ~90 (`fr2021 + ext`).
+- **Modelo (E5–E7):** variações de TF-IDF e embeddings empatam (89–92). Escolhido `char_wb(2,5)` (91,4): topo da
+  validação e único do topo que nunca perdeu para a base em fontes novas (E6: ~80–83).
+- **Feature de números (E8):** as true têm mais números (no externo, ~2×), mas a feature não acrescenta nada ao
+  TF-IDF (peso ~0 no SVM). Não usada.
+- **Teste final (único, testes 1 + 2, 116 itens):** escolhido F1 **94,2 [IC 89–99]**, recall true 100%, recall fake
+  83,9%. Os ICs se sobrepõem com os outros modelos treinados com o externo (~92) e com os antigos (~88): o teste
+  confirma a direção, mas não prova vencedor. Os erros são boatos com redação de notícia.
+
 ---
 
 ## 6. Decisões vigentes
 
 | Decisão | Escolha | Evidência |
 |---|---|---|
-| Representação | TF-IDF word (1,2), 50k features | grid por fonte: empate; mantida a original |
-| Classificador | LinearSVC C=1 | C menor não ajudou |
+| Representação | **TF-IDF char_wb (2,5)**, 200k features, sublinear (antes: word (1,2)) | E5 empate no topo; E6 mais robusto em fontes novas |
+| Classificador | LinearSVC C=1, `class_weight="balanced"` | C e LogReg empatam (E5) |
+| Embeddings | não usar | e5-small empata, mas é mais pesado e sem medida entre fontes (E7) |
+| Feature de números | não usar | peso ~0 junto do TF-IDF (E8) |
 | Features linguísticas | não usar | 62,6% entre fontes; peso ~0 no stacking |
 | Híbrido | não usar | piora em todos os protocolos limpos |
 | Mascaramento | não usar | generaliza pior entre fontes |
 | Formato de treino | truncamento misto 30/50/100 | melhor nos 3 tamanhos; texto completo colapsa |
 | Entrada no produto | até ~50 palavras | faixa mais equilibrada |
-| Dados de treino | Fake.br + FakeRecogna 2020–2021 (candidato) | V1: +14 pontos no FR2021 sem perda no controle |
+| Dados de treino | **FakeRecogna 2020–21 + corpus externo** (`fr2021 + ext`; antes: Fake.br + FR 2020–21) | E4: +7,5 pontos na validação externa; Fake.br não ajuda quando há o externo |
 
-**Estimativa atual de desempenho:** ~89% na mesma fonte; ~75% em fontes novas da mesma época; ~70% no FakeRecogna (modelo só Fake.br); ~83% no FR2021 (candidato, validação). **Desinformação atual (2026): desconhecido, a medir no teste final.**
+**Estimativa atual de desempenho (modelo escolhido):** F1 ~94 [89–99] em notícias de 2026 das mesmas fontes
+(testes 1 + 2); ~80–83 em fontes que o modelo nunca viu (E6). Históricos: ~89% na mesma fonte no Fake.br; ~75% em
+fontes novas do Fake.br (modelo antigo).
 
 ---
 
@@ -309,13 +332,14 @@ Pesos do stacking: TF-IDF 4,359 e features 0,282. **Decisão: modelo final só c
 
 ## 8. Próximos passos
 
-1. Rodar a coleta automática do teste externo (RSS) e **conferir** os trechos: remover linhas só por conteúdo.
-2. **Com autorização do responsável**, avaliar uma única vez `modelo_final_fakebr` e `modelo_candidato_fakebr_fakerecogna` no `teste_externo_2026.csv`:
-   - balanced accuracy, accuracy com IC 95% (Wilson), matriz de confusão;
-   - resultados por fonte (Agência Brasil, G1, Boatos.org, E-farsas);
-   - lembrar: com 60 itens o IC é de ~±12 pontos, então diferenças pequenas entre modelos não permitem declarar vencedor.
-3. Escrever o relatório com os resultados na ordem da seção 5, separando interno, validação e teste, e com as limitações da seção 7.
-4. Opcionais (não testados, não assumir que ajudam):
+1. ~~Coletar e conferir o teste externo~~ (feito; mais um 2º teste).
+2. ~~Avaliar uma única vez no teste~~ (feito em 05/10/2026, 8 métodos; seção 5.11).
+3. Escrever o relatório final (base: `relatorio.html` e `EXPERIMENTOS.md`), separando interno, validação e teste, e
+   com as limitações da seção 7. Apresentação: 09/10/2026.
+4. Para medir de novo: teste 3 com notícias posteriores a 05/10, pré-registrado, só o modelo escolhido
+   (roteiro na seção 3.2 do `CONTINUAR.md`).
+5. Opcionais (não testados, não assumir que ajudam; exigem nova validação e um teste novo):
+   - remover os 42 especiais publicitários do G1 do corpus externo;
    - no treino misto, usar em cada nível só textos com pelo menos N palavras (reduz o resíduo de tamanho em N=100);
    - calibrar scores para probabilidade (produto);
    - split temporal adicional.

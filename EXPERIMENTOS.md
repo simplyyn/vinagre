@@ -7,6 +7,10 @@ Protocolos são sempre identificados; números de protocolos diferentes não sã
 experimento desta fase**. Toda escolha de modelo usa a validação externa descrita abaixo. O teste só será
 avaliado uma vez, no final, com autorização.
 
+**Status em 05/10/2026: fase encerrada.** Modelo escolhido: `modelos_finais/03.joblib` (TF-IDF char_wb(2,5),
+`fr2021 + ext`). Avaliação final única feita nos testes 1 e 2 (F1 94,2 [89–99]; ver "Avaliação final ÚNICA").
+Os testes 1 e 2 não podem mais ser usados para escolher ou ajustar nada.
+
 ---
 
 ## E0. Ambiente e reprodução (30/09/2026)
@@ -289,6 +293,18 @@ avaliado uma vez, no final, com autorização.
   - E-farsas tem 1 item nos testes: não dá para avaliar essa fonte.
 - **Estimativa final para o relatório:** F1 ~94 [89–99] em boatos e notícias das mesmas fontes, na semana seguinte
   ao treino; ~80–83 esperado em fontes novas (E6).
+
+## Depois da avaliação: relatório e testadores (05/10/2026)
+
+- **Relatório da apresentação:** `relatorio.html`, gerado por `dados_relatorio.py` a partir dos CSVs de resultado
+  (nenhum número digitado à mão, exceto os históricos do README, citados com a seção de origem).
+- **Testadores manuais (demonstração):** `testar_noticia.py` (terminal) e `testador_web.py` (navegador, servidor
+  local em 127.0.0.1:8000). Mostram a previsão e a distância à fronteira de cada modelo para uma notícia colada.
+  **Não são medida de desempenho** (notícias escolhidas à mão) e não devem orientar nenhuma mudança no modelo.
+  Observação de uso: casos com confiança perto de 0 e modelos divididos aparecem em textos que misturam estilo de
+  boato e de notícia, como esperado pela limitação 3 do README.
+- **Para continuar testando com rigor:** coletar um teste 3 (notícias após 05/10), pré-registrar e avaliar só o
+  modelo escolhido, sem mudanças (roteiro na seção 3.2 do `CONTINUAR.md`).
 
 ## E8. Feature de números (05/10/2026, fora do plano original)
 
