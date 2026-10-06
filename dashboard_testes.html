@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Dashboard de Testes — Detector de Fake News</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f0f2f5; color: #1a1d23; }
+
+  header { background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); color: white; padding: 32px 40px; }
+  header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 6px; }
+  header p  { opacity: .75; font-size: .95rem; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  /* METRICS */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 36px; }
+  .metric-card { background: white; border-radius: 12px; padding: 20px 24px; box-shadow: 0 1px 4px rgba(0,0,0,.08); text-align: center; }
+  .metric-card .val  { font-size: 2.2rem; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+  .metric-card .lbl  { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: #64748b; }
+  .metric-card.green .val { color: #16a34a; }
+  .metric-card.blue  .val { color: #2563eb; }
+  .metric-card.orange .val { color: #d97706; }
+  .metric-card.red   .val { color: #dc2626; }
+
+  /* SECTION HEADER */
+  .section-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+                   color: #64748b; margin: 28px 0 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+
+  /* NEWS CARDS */
+  .cards { display: flex; flex-direction: column; gap: 16px; }
+  .card { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+          overflow: hidden; border-left: 5px solid #e2e8f0; }
+  .card.acerto { border-left-color: #16a34a; }
+  .card.erro   { border-left-color: #dc2626; }
+
+  .card-header { display: flex; align-items: flex-start; gap: 14px; padding: 18px 20px 14px; }
+  .badge-id    { width: 30px; height: 30px; border-radius: 50%; background: #f1f5f9;
+                 font-weight: 700; font-size: .8rem; display: flex; align-items: center;
+                 justify-content: center; flex-shrink: 0; color: #475569; }
+  .card-title  { flex: 1; }
+  .card-title h3 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+  .card-title .meta { font-size: .8rem; color: #64748b; }
+  .card-title .meta a { color: #2563eb; text-decoration: none; }
+  .card-title .meta a:hover { text-decoration: underline; }
+
+  .result-badges { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+  .badge { padding: 4px 12px; border-radius: 20px; font-size: .78rem; font-weight: 700; letter-spacing: .03em; }
+  .badge.true-badge  { background: #dbeafe; color: #1d4ed8; }
+  .badge.fake-badge  { background: #fee2e2; color: #b91c1c; }
+  .badge.ok-badge    { background: #dcfce7; color: #15803d; font-size: .7rem; }
+  .badge.fail-badge  { background: #fef2f2; color: #dc2626; font-size: .7rem; }
+  .badge.real-label  { border: 2px solid #cbd5e1; background: transparent; color: #475569; font-size: .7rem; }
+
+  .card-body { padding: 0 20px 18px; }
+  .card-text { background: #f8fafc; border-radius: 8px; padding: 12px 14px; font-size: .875rem;
+               color: #374151; line-height: 1.6; margin-bottom: 14px; border: 1px solid #e2e8f0; }
+  .card-text em { color: #94a3b8; font-style: normal; font-size: .8rem; }
+
+  /* CONFIDENCE BAR */
+  .conf-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .conf-label { font-size: .78rem; color: #64748b; width: 200px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conf-bar-bg { flex: 1; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+  .conf-bar-fill { height: 100%; border-radius: 4px; transition: width .3s; }
+  .fill-true { background: #3b82f6; }
+  .fill-fake { background: #f87171; }
+  .conf-val  { font-size: .75rem; color: #64748b; width: 38px; text-align: right; flex-shrink: 0; }
+  .conf-cls  { font-size: .72rem; font-weight: 700; width: 32px; flex-shrink: 0; }
+  .cls-true  { color: #1d4ed8; }
+  .cls-fake  { color: #b91c1c; }
+
+  .models-label { font-size: .73rem; color: #94a3b8; font-weight: 600; text-transform: uppercase;
+                  letter-spacing: .05em; margin-bottom: 8px; margin-top: 14px; }
+
+  /* ERROR NOTES */
+  .error-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+               padding: 10px 14px; margin-top: 8px; font-size: .82rem; color: #78350f; line-height: 1.5; }
+  .error-box strong { color: #92400e; }
+
+  /* FOOTER */
+  footer { text-align: center; padding: 32px; font-size: .8rem; color: #94a3b8; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Dashboard de Testes — Detector de Fake News</h1>
+  <p>Modelo: TF-IDF char_wb(2,5) + LinearSVC balanceado &nbsp;·&nbsp; Treino: fr2021+ext &nbsp;·&nbsp; <strong>modelos_finais/03.joblib</strong> &nbsp;·&nbsp; 05/10/2026</p>
+</header>
+
+<div class="container">
+
+  <!-- MÉTRICAS -->
+  <div class="metrics">
+    <div class="metric-card green">
+      <div class="val">8/10</div>
+      <div class="lbl">Acertos totais</div>
+    </div>
+    <div class="metric-card blue">
+      <div class="val">100%</div>
+      <div class="lbl">Recall TRUE (5/5)</div>
+    </div>
+    <div class="metric-card orange">
+      <div class="val">60%</div>
+      <div class="lbl">Recall FAKE (3/5)</div>
+    </div>
+    <div class="metric-card red">
+      <div class="val">2</div>
+      <div class="lbl">Erros (FAKE→TRUE)</div>
+    </div>
+  </div>
+
+  <!-- NOTÍCIAS VERDADEIRAS -->
+  <div class="section-label">Notícias verdadeiras — Agência Brasil</div>
+  <div class="cards">
+
+    <!-- #1 -->
+    <div class="card acerto">
+      <div class="card-header">
+        <div class="badge-id">1</div>
+        <div class="card-title">
+          <h3>Renovação da Câmara federal chegou a 35%</h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; <a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/renovacao-da-camara-federal-chegou-35-veja-nova-composicao-da-casa" target="_blank">ver fonte</a> &nbsp;·&nbsp; 39 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge true-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Com base nos dados do Tribunal Superior Eleitoral, a Câmara dos Deputados confirmou que entre os 513 deputados federais eleitos, 183 vão exercer seu primeiro mandato. Esse número representa uma taxa de renovação de 35,67% dos integrantes da Casa.</div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:29.7%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.594</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:18%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.360</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:21.9%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.437</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:6.9%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.138</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:1.2%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.023</span></div>
+      </div>
+    </div>
+
+    <!-- #2 -->
+    <div class="card acerto">
+      <div class="card-header">
+        <div class="badge-id">2</div>
+        <div class="card-title">
+          <h3>TSE quer parecer do MP sobre recurso de Garotinho</h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; <a href="https://agenciabrasil.ebc.com.br/justica/noticia/2026-10/tse-quer-parecer-do-mp-antes-de-decisao-sobre-recurso-de-garotinho" target="_blank">ver fonte</a> &nbsp;·&nbsp; 39 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge true-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O ministro Floriano de Azevedo Marques, do Tribunal Superior Eleitoral, concedeu prazo de dois dias para a Procuradoria-Geral Eleitoral se manifestar sobre o pedido do candidato ao governo do Rio de Janeiro Anthony Garotinho para desistir de um recurso.</div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:48.4%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.967</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:62.2%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.244</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:75.7%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.513</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:68.9%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.377</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:51.7%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.034</span></div>
+      </div>
+    </div>
+
+    <!-- #3 -->
+    <div class="card acerto">
+      <div class="card-header">
+        <div class="badge-id">3</div>
+        <div class="card-title">
+          <h3>Prazo para sacar dinheiro das bets termina hoje</h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; <a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/prazo-para-sacar-dinheiro-das-bets-termina-nesta-segunda" target="_blank">ver fonte</a> &nbsp;·&nbsp; 40 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge true-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Quem ainda tem dinheiro em sites de apostas esportivas e jogos virtuais tem até as 23h59 desta segunda-feira para solicitar o saque diretamente nas plataformas. A partir da 0h de terça-feira, os sites e aplicativos deverão ser retirados do ar.</div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:55.1%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.101</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:26.9%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.538</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:47.3%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.946</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:21.8%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.435</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:34.3%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.686</span></div>
+      </div>
+    </div>
+
+    <!-- #4 -->
+    <div class="card acerto">
+      <div class="card-header">
+        <div class="badge-id">4</div>
+        <div class="card-title">
+          <h3>Bolsonaro e Lula vão ao segundo turno</h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; <a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/quando-sera-o-segundo-turno-das-eleicoes-veja-data" target="_blank">ver fonte</a> &nbsp;·&nbsp; 39 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge true-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Os candidatos Flávio Bolsonaro e Luiz Inácio Lula da Silva irão disputar o segundo turno da eleição para presidente da República. Com isso, os eleitores voltam às urnas para o segundo turno no dia 25 de outubro de 2026.</div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:47.6%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.951</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:35.1%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.702</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:36.3%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.726</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:32.1%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.642</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:40.2%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.804</span></div>
+      </div>
+    </div>
+
+    <!-- #5 -->
+    <div class="card acerto">
+      <div class="card-header">
+        <div class="badge-id">5</div>
+        <div class="card-title">
+          <h3>Urna eletrônica completa 30 anos de revolução</h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; <a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/urna-eletronica-completa-30-anos-de-revolucao-nas-eleicoes-do-brasil" target="_blank">ver fonte</a> &nbsp;·&nbsp; 36 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge true-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Os mais jovens não conhecem a experiência de chegar à seção de votação, receber um papel com os nomes dos candidatos, marcar os escolhidos à caneta e depositar o papel dobrado em uma urna de lona.</div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:36.3%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.726</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:19.6%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.392</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:26.2%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.523</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:2.5%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.049</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:4.1%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.082</span></div>
+      </div>
+    </div>
+
+  </div><!-- /cards true -->
+
+  <!-- BOATOS -->
+  <div class="section-label">Boatos verificados — Boatos.org &amp; E-farsas</div>
+  <div class="cards">
+
+    <!-- #6 -->
+    <div class="card acerto">
+      <div class="card-header">
+        <div class="badge-id">6</div>
+        <div class="card-title">
+          <h3>Falsa morte de Carlos Alberto de Nóbrega</h3>
+          <div class="meta">Boatos.org &nbsp;·&nbsp; <a href="https://www.boatos.org/politica/fake-news-sobre-morte-carlos-alberto-de-nobrega-se-espalha-em-outubro-de-2026.html" target="_blank">ver checagem</a> &nbsp;·&nbsp; 36 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">COMUNICADO DE LUTO DE CARREIRA CARLOS A. DE NÓBREGA 12/03/1936 | 25/09/2026 Ele segue bem, apenas fim de carreira nas telinhas brasileiras. Morre Carlos Alberto de Nóbrega aos 86 anos após gravação de programa no SBT.</div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:54.1%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.081</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:37.7%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.753</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:70.3%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.406</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:10.4%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.208</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:1.8%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.036</span></div>
+      </div>
+    </div>
+
+    <!-- #7 ERRO -->
+    <div class="card erro">
+      <div class="card-header">
+        <div class="badge-id">7</div>
+        <div class="card-title">
+          <h3>Deputada Eduarda Campopiano contra voto feminino</h3>
+          <div class="meta">Boatos.org &nbsp;·&nbsp; <a href="https://www.boatos.org/politica/e-falso-que-eduarda-campopiano-tenha-declarado-ser-contra-o-voto-feminino.html" target="_blank">ver checagem</a> &nbsp;·&nbsp; 41 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge true-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">você tem direitos? só pq você tem direitos hoje não significa que você terá direitos amanhã. eduarda campopiano foi eleita para o cargo de deputada estadual em São Paulo, uma mulher que é contra o voto feminino, antifeminista, conservadora, contra cotas</div>
+        <div class="error-box">
+          <strong>Por que errou?</strong> O boato descreve a deputada eleita como se fosse uma notícia factual ("foi eleita para o cargo de..."). O estilo é mais próximo de texto informativo do que de boato típico de WhatsApp. O modelo trabalha com registro/estilo de redação — quando o boato imita linguagem jornalística, tende a passar como TRUE. Confiança baixa (0.131) indica que o modelo estava próximo da fronteira de decisão.
+        </div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:6.6%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.131</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:32.8%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.655</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:1.2%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.024</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:31.5%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.630</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:28.8%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.576</span></div>
+      </div>
+    </div>
+
+    <!-- #8 -->
+    <div class="card acerto">
+      <div class="card-header">
+        <div class="badge-id">8</div>
+        <div class="card-title">
+          <h3>Lula jogou bandeira do Brasil no chão após votar</h3>
+          <div class="meta">Boatos.org &nbsp;·&nbsp; <a href="https://www.boatos.org/politica/lula-jogou-bandeira-do-brasil-no-chao-apos-votar-nas-eleicoes-2026.html" target="_blank">ver checagem</a> &nbsp;·&nbsp; 38 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Lula e a bandeira: Após voto Lula embola e joga a bandeira no chão? QUAL SUA OPINIÃO? Vídeos que circulam nas redes sociais mostram o presidente Lula arremessando uma bandeira do Brasil após votar nas eleições de 2026.</div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:89.2%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.784</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:64.8%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.295</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:75.5%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.509</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:62%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.239</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:37.1%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.742</span></div>
+      </div>
+    </div>
+
+    <!-- #9 -->
+    <div class="card acerto">
+      <div class="card-header">
+        <div class="badge-id">9</div>
+        <div class="card-title">
+          <h3>Xuxa gravou vídeo criticando Lula sobre toque em crianças</h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; <a href="https://www.e-farsas.com/a-xuxa-gravou-video-criticando-falas-do-presidente-lula-sobre-toque-em-criancas.html" target="_blank">ver checagem</a> &nbsp;·&nbsp; 31 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Vídeo mostra a apresentadora Xuxa chorando e criticando falas do presidente Lula sobre toque íntimo em crianças. A apresentadora teria gravado um vídeo recentemente se manifestando contra as declarações do presidente.</div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:67.4%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.347</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:40.6%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.812</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:49%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.979</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:56.4%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.128</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:34.1%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.682</span></div>
+      </div>
+    </div>
+
+    <!-- #10 ERRO -->
+    <div class="card erro">
+      <div class="card-header">
+        <div class="badge-id">10</div>
+        <div class="card-title">
+          <h3>TSE vai investigar atraso na divulgação como fraude</h3>
+          <div class="meta">Boatos.org &nbsp;·&nbsp; <a href="https://www.boatos.org/politica/tse-vai-investigar-se-atraso-na-divulgacao-de-resultados-das-eleicoes-tem-relacao-com-fraude-contra-flavio-bolsonaro.html" target="_blank">ver checagem</a> &nbsp;·&nbsp; 28 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge true-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">ATENÇÃO! ASSUNTO URGENTE TRIBUNAL SUPERIOR ELEITORAL TSE VAI INVESTIGAR O ATRASO NA ATUALIZAÇÃO DO SISTEMA DURANTE A APURAÇÃO DO 1º TURNO SEGUNDO FONTES, ALGUNS PONTOS JÁ FORAM DETECTADOS</div>
+        <div class="error-box">
+          <strong>Por que errou?</strong> Confiança praticamente zero (0.004) — o modelo está na fronteira da decisão, essencialmente aleatório. O texto é curto (28 palavras) e menciona instituições reais (TSE, apuração, fontes), que remetem ao registro de notícia verdadeira. Note que os outros três modelos (Palavras+Caracteres, Candidato antigo, Só Fake.br) classificaram corretamente como FAKE. Limitação conhecida: boatos que citam instituições e termos jornalísticos tendem a ser difíceis.
+        </div>
+        <div class="models-label">Comparação entre modelos</div>
+        <div class="conf-row"><span class="conf-label">TF-IDF caracteres <strong>[ESCOLHIDO]</strong></span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:0.2%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.004</span></div>
+        <div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:11.1%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.222</span></div>
+        <div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:89.5%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.790</span></div>
+        <div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:10%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.200</span></div>
+        <div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:13.1%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.262</span></div>
+      </div>
+    </div>
+
+  </div><!-- /cards fake -->
+
+  <!-- NOTA METODOLÓGICA -->
+  <div class="section-label">Nota metodológica</div>
+  <div style="background:white;border-radius:12px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);font-size:.875rem;line-height:1.7;color:#374151;">
+    <p><strong>Este é um teste de demonstração, não uma medida de desempenho.</strong> As 10 notícias foram escolhidas manualmente; uma amostra escolhida à mão não é representativa. Não use estes resultados para comparar modelos ou ajustar parâmetros.</p>
+    <p style="margin-top:10px;">A medida oficial do modelo escolhido é <strong>F1 94,2% [IC 89–99]</strong> nos testes 1+2 (116 itens coletados automaticamente por RSS, avaliados uma única vez em 05/10/2026). Em fontes nunca vistas pelo modelo, o desempenho cai para ~80–83%.</p>
+    <p style="margin-top:10px;">Os erros #7 e #10 ilustram a limitação central: <strong>o modelo classifica por estilo de redação, não por veracidade factual.</strong> Boatos com linguagem jornalística ou que citam instituições reais tendem a escapar.</p>
+  </div>
+
+</div><!-- /container -->
+
+<footer>Modelo: modelos_finais/03.joblib &nbsp;·&nbsp; TF-IDF char_wb(2,5) + LinearSVC balanceado &nbsp;·&nbsp; Projeto de Residência em IA &nbsp;·&nbsp; 05/10/2026</footer>
+
+</body>
+</html>

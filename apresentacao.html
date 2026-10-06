@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detector de Fake News em Português — Residência em IA 2026</title>
+<style>
+  :root {
+    --blue:   #1e3a5f;
+    --blue2:  #2563eb;
+    --green:  #16a34a;
+    --red:    #dc2626;
+    --orange: #d97706;
+    --gray:   #64748b;
+    --bg:     #f0f4f8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: #1a1d23; }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--blue); color: white;
+    display: flex; align-items: center; gap: 0; padding: 0 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  }
+  nav .brand { font-weight: 800; font-size: 1rem; padding: 14px 0; margin-right: auto; letter-spacing: -.01em; }
+  nav a { color: rgba(255,255,255,.75); text-decoration: none; font-size: .82rem; padding: 14px 14px;
+           transition: color .15s; white-space: nowrap; }
+  nav a:hover { color: white; }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, var(--blue) 0%, #1a56db 60%, #3b82f6 100%);
+    color: white; padding: 80px 40px 72px; text-align: center;
+  }
+  .hero .tag { display: inline-block; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+               border-radius: 20px; padding: 4px 16px; font-size: .8rem; font-weight: 600;
+               letter-spacing: .06em; text-transform: uppercase; margin-bottom: 20px; }
+  .hero h1 { font-size: 2.6rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; max-width: 720px; margin-left: auto; margin-right: auto; }
+  .hero p  { font-size: 1.1rem; opacity: .8; max-width: 600px; margin: 0 auto 32px; line-height: 1.6; }
+  .hero-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .hero-badge { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+                border-radius: 8px; padding: 10px 18px; font-size: .9rem; font-weight: 600; }
+  .hero-badge span { font-size: 1.3rem; display: block; font-weight: 800; color: #93c5fd; }
+
+  /* ── SECTION ── */
+  section { max-width: 980px; margin: 0 auto; padding: 64px 24px; }
+  section + section { padding-top: 0; }
+  .section-tag { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+                  color: var(--blue2); margin-bottom: 10px; }
+  h2 { font-size: 1.65rem; font-weight: 800; color: var(--blue); margin-bottom: 8px; line-height: 1.2; }
+  .lead { font-size: 1rem; color: var(--gray); line-height: 1.7; margin-bottom: 32px; max-width: 700px; }
+
+  /* ── CARDS ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .card {
+    background: white; border-radius: 14px; padding: 22px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .card h3 { font-size: .95rem; font-weight: 700; margin-bottom: 8px; color: var(--blue); }
+  .card p, .card li { font-size: .875rem; color: #374151; line-height: 1.65; }
+  .card ul { padding-left: 18px; }
+  .card ul li { margin-bottom: 4px; }
+
+  /* ── METRIC CARDS ── */
+  .metric { text-align: center; }
+  .metric .val { font-size: 2.2rem; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+  .metric .lbl { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--gray); }
+  .green { color: var(--green); } .blue { color: var(--blue2); }
+  .orange { color: var(--orange); } .red { color: var(--red); }
+
+  /* ── CODE BLOCK ── */
+  .code-wrap { background: #0f172a; border-radius: 12px; padding: 24px 28px; margin: 20px 0; overflow-x: auto; }
+  .code-wrap pre { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: .85rem;
+                   color: #e2e8f0; line-height: 1.7; white-space: pre; }
+  .kw  { color: #93c5fd; } /* keyword */
+  .st  { color: #86efac; } /* string */
+  .cm  { color: #475569; } /* comment */
+  .nm  { color: #fde68a; } /* number */
+
+  /* ── PIPELINE ── */
+  .pipeline { display: flex; align-items: center; gap: 0; flex-wrap: wrap; justify-content: center; margin: 28px 0; }
+  .pipe-step {
+    background: white; border-radius: 10px; padding: 14px 18px; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08); min-width: 120px;
+  }
+  .pipe-step .ico { font-size: 1.4rem; margin-bottom: 4px; }
+  .pipe-step .ttl { font-size: .8rem; font-weight: 700; color: var(--blue); }
+  .pipe-step .sub { font-size: .72rem; color: var(--gray); margin-top: 2px; }
+  .pipe-arrow { font-size: 1.4rem; color: #94a3b8; padding: 0 6px; }
+
+  /* ── RESULTS TABLE ── */
+  .tbl-wrap { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-top: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  th { background: var(--blue); color: white; padding: 11px 14px; text-align: left; font-size: .78rem;
+       text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; }
+  tr:last-child td { border-bottom: none; }
+  tr.highlight td { background: #eff6ff; font-weight: 700; }
+  tr:hover td { background: #f8fafc; }
+  .tag-escolhido { background: #dbeafe; color: #1d4ed8; border-radius: 4px; padding: 2px 7px;
+                   font-size: .72rem; font-weight: 700; }
+
+  /* ── TIMELINE ── */
+  .timeline { border-left: 3px solid #e2e8f0; padding-left: 28px; margin-top: 20px; }
+  .tl-item { margin-bottom: 24px; position: relative; }
+  .tl-item::before { content: ""; width: 12px; height: 12px; border-radius: 50%;
+                      background: var(--blue2); position: absolute; left: -37px; top: 4px; }
+  .tl-item .tl-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+                        color: var(--blue2); margin-bottom: 3px; }
+  .tl-item h4 { font-size: .95rem; font-weight: 700; margin-bottom: 4px; color: var(--blue); }
+  .tl-item p  { font-size: .86rem; color: #374151; line-height: 1.6; }
+
+  /* ── BARS ── */
+  .bar-row { margin-bottom: 10px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: .82rem; margin-bottom: 4px; }
+  .bar-label span:first-child { color: #374151; }
+  .bar-label span:last-child  { font-weight: 700; color: var(--blue); }
+  .bar-bg { height: 10px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
+  .bar-fill.green { background: linear-gradient(90deg, #22c55e, var(--green)); }
+
+  /* ── LIMIT CARDS ── */
+  .limit-card { border-left: 4px solid var(--orange); background: #fffbeb; }
+
+  /* ── FOOTER ── */
+  footer { text-align: center; padding: 40px 24px; font-size: .82rem; color: var(--gray);
+           border-top: 1px solid #e2e8f0; background: white; }
+  footer strong { color: var(--blue); }
+
+  /* responsive */
+  @media (max-width: 720px) {
+    .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 1.9rem; }
+    nav a { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="brand">🔍 Fake News Detector</div>
+  <a href="#problema">Problema</a>
+  <a href="#dados">Dados</a>
+  <a href="#modelo">Modelo</a>
+  <a href="#hiperparametros">Hiperparâmetros</a>
+  <a href="#resultados">Resultados</a>
+  <a href="#validacao">Validação 50</a>
+  <a href="#limitacoes">Limitações</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="tag">Residência em IA · 2026</div>
+  <h1>Detector de Fake News em Português</h1>
+  <p>Classificação automática de trechos curtos de notícias como <strong>verdadeiras</strong> ou <strong>falsas</strong> — sem regras manuais, direto do texto.</p>
+  <div class="hero-badges">
+    <div class="hero-badge"><span>94,2%</span>F1 no teste oficial</div>
+    <div class="hero-badge"><span>100%</span>Recall TRUE</div>
+    <div class="hero-badge"><span>83,9%</span>Recall FAKE</div>
+    <div class="hero-badge"><span>50 palavras</span>Entrada máxima</div>
+  </div>
+</div>
+
+<!-- PROBLEMA -->
+<section id="problema">
+  <div class="section-tag">O Problema</div>
+  <h2>Classificar trechos de notícia sem ver o texto completo</h2>
+  <p class="lead">O produto final recebe até 50 palavras de uma notícia (início da matéria ou boato citado) e deve responder: <strong>TRUE</strong> ou <strong>FAKE</strong>.</p>
+  <div class="grid3">
+    <div class="card">
+      <h3>Entrada</h3>
+      <p>Trecho de 30–50 palavras: início da matéria (true) ou boato citado entre aspas (fake).</p>
+    </div>
+    <div class="card">
+      <h3>Saída</h3>
+      <p>Classe (<strong>TRUE</strong> ou <strong>FAKE</strong>) + confiança = distância da fronteira de decisão do SVM.</p>
+    </div>
+    <div class="card">
+      <h3>Desafio</h3>
+      <p>Texto incompleto, sem contexto externo, múltiplas fontes e estilos de redação muito diferentes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DADOS -->
+<section id="dados">
+  <div class="section-tag">Dados</div>
+  <h2>Três corpora, um formato só</h2>
+  <p class="lead">O modelo final usa FakeRecogna 2020–21 + corpus externo coletado no formato do produto.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>FakeRecogna 2.0 — 2020–21 (treino)</h3>
+      <ul>
+        <li>4.660 itens: 2.330 fake × 2.330 true</li>
+        <li>Fake: Boatos.org, E-farsas, Aos Fatos, Lupa…</li>
+        <li>True: resumos automáticos de notícias reais</li>
+        <li>Apenas anos 2020–2021 (onde as duas classes existem)</li>
+        <li>Tipo fake: <em>boato citado</em> e <em>outros</em> (sem textos de checagem)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Corpus Externo 2022–2026 (treino + validação)</h3>
+      <ul>
+        <li>2.849 itens coletados via RSS no formato do produto</li>
+        <li>Fake: Boatos.org 810, E-farsas 112</li>
+        <li>True: G1 1.824, Agência Brasil 103</li>
+        <li>Split temporal: treino até ago/2026, validação ago–set/2026</li>
+        <li>Validação: 855 itens — toda decisão de modelo usa esses dados</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Fake.br (contexto)</h3>
+      <ul>
+        <li>7.198 notícias, 2016–2018</li>
+        <li>92,7% das fake de um só site (Diário do Brasil)</li>
+        <li>Não entra no modelo final: piora quando há corpus externo</li>
+        <li>Usado nos experimentos para entender limitações</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Testes externos (avaliação única)</h3>
+      <ul>
+        <li><strong>Teste 1:</strong> 39 itens (coleta 30/09/2026)</li>
+        <li><strong>Teste 2:</strong> 77 itens (coleta 28/09–05/10/2026)</li>
+        <li>Coletados via RSS, sem escolha manual, conferidos só por conteúdo</li>
+        <li>Avaliados <strong>uma única vez</strong> em 05/10/2026 — não usados em nenhuma decisão</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section id="modelo">
+  <div class="section-tag">Modelo</div>
+  <h2>Pipeline: texto → decisão</h2>
+  <p class="lead">Cinco etapas determinísticas, sem dependências externas além do sklearn.</p>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="ico">📄</div>
+      <div class="ttl">Entrada</div>
+      <div class="sub">Texto bruto</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="ico">✂️</div>
+      <div class="ttl">Truncamento</div>
+      <div class="sub">50 palavras</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="ico">🔤</div>
+      <div class="ttl">TF-IDF</div>
+      <div class="sub">char_wb(2,5)</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="ico">⚖️</div>
+      <div class="ttl">LinearSVC</div>
+      <div class="sub">C=1, balanced</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="ico">🎯</div>
+      <div class="ttl">Decisão</div>
+      <div class="sub">score ≥ 0 → TRUE</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:24px">
+    <div class="card">
+      <h3>Por que TF-IDF de caracteres?</h3>
+      <ul>
+        <li>n-gramas de caracteres capturam grafia própria de boatos (MAIÚSCULAS, erros, pontuação)</li>
+        <li>Mais robusto que palavras em fontes novas — nunca perdeu para a base na validação cruzada de fontes (E6)</li>
+        <li>Empata com e5-small (embeddings 470 MB) com 200k features, sem GPU</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Por que treino misto 30/50/100 palavras?</h3>
+      <ul>
+        <li>Treinar só com texto completo colapsa a classificação de trechos curtos: 99,8% das entradas curtas viram FAKE</li>
+        <li>Aumentar com 3 tamanhos diferentes expõe o modelo ao formato real do produto</li>
+        <li>Melhora em todos os tamanhos de entrada: N=30 (+0,8), N=50 (+0,7), N=100 (+1,6) vs treino fixo em N=50</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- HIPERPARÂMETROS -->
+<section id="hiperparametros">
+  <div class="section-tag">Hiperparâmetros</div>
+  <h2>Especificação completa do modelo escolhido</h2>
+  <p class="lead">Arquivo: <code>modelos_finais/03.joblib</code> &nbsp;·&nbsp; scikit-learn 1.6.1 obrigatório</p>
+
+  <div class="code-wrap">
+<pre><span class="cm"># Pipeline exato do modelo escolhido</span>
+<span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.feature_extraction.text <span class="kw">import</span> TfidfVectorizer
+<span class="kw">from</span> sklearn.svm <span class="kw">import</span> LinearSVC
+
+modelo = Pipeline([
+    (<span class="st">"tfidf"</span>, TfidfVectorizer(
+        analyzer     = <span class="st">"char_wb"</span>,    <span class="cm"># n-gramas de caracteres dentro de palavras</span>
+        ngram_range  = (<span class="nm">2</span>, <span class="nm">5</span>),        <span class="cm"># bigramas a pentagramas de chars</span>
+        max_features = <span class="nm">200_000</span>,      <span class="cm"># vocabulário máximo</span>
+        sublinear_tf = <span class="nm">True</span>,          <span class="cm"># log(tf) + 1</span>
+        dtype        = <span class="nm">np.float32</span>,    <span class="cm"># memória</span>
+    )),
+    (<span class="st">"svm"</span>, LinearSVC(
+        C            = <span class="nm">1.0</span>,            <span class="cm"># regularização padrão</span>
+        class_weight = <span class="st">"balanced"</span>,   <span class="cm"># compensa desbalanço fake/true no treino</span>
+        max_iter     = <span class="nm">20_000</span>,        <span class="cm"># convergência garantida</span>
+    )),
+])
+
+<span class="cm"># Treino com data augmentation (misto 30/50/100 palavras)</span>
+<span class="kw">def</span> <span class="st">truncar</span>(textos, N):
+    <span class="kw">return</span> textos.str.split().str[:N].str.join(<span class="st">" "</span>)
+
+<span class="kw">def</span> <span class="st">aumentar</span>(textos, labels):
+    t = [truncar(textos, n) <span class="kw">for</span> n <span class="kw">in</span> (<span class="nm">30</span>, <span class="nm">50</span>, <span class="nm">100</span>)]
+    <span class="kw">return</span> pd.concat(t), pd.concat([labels] * <span class="nm">3</span>)
+
+<span class="cm"># Dados de treino: FakeRecogna 2020–21 + corpus externo (fr2021 + ext)</span>
+<span class="cm"># Decisão: score >= 0 → "true";  score < 0 → "fake"</span>
+score = modelo.decision_function([trecho])[<span class="nm">0</span>]
+classe = <span class="st">"true"</span> <span class="kw">if</span> score >= <span class="nm">0</span> <span class="kw">else</span> <span class="st">"fake"</span></pre>
+  </div>
+
+  <div class="grid4" style="margin-top:20px">
+    <div class="card metric">
+      <div class="val blue">char_wb</div>
+      <div class="lbl">Analyzer TF-IDF</div>
+    </div>
+    <div class="card metric">
+      <div class="val blue">(2, 5)</div>
+      <div class="lbl">ngram_range</div>
+    </div>
+    <div class="card metric">
+      <div class="val blue">200k</div>
+      <div class="lbl">max_features</div>
+    </div>
+    <div class="card metric">
+      <div class="val blue">C = 1,0</div>
+      <div class="lbl">LinearSVC</div>
+    </div>
+  </div>
+</section>
+
+<!-- JORNADA -->
+<section>
+  <div class="section-tag">Experimentos</div>
+  <h2>Jornada de decisões (30/09 – 05/10/2026)</h2>
+  <p class="lead">Cada experimento usou apenas a validação externa — o teste final nunca foi consultado.</p>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-label">E0 · 30/09</div>
+      <h4>Reprodução dos números de controle</h4>
+      <p>Baseline só tamanho = 94,15% acc; TF-IDF N=50 = 89,88% F1. Confirmados com sklearn 1.6.1.</p>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label">E1–E2 · 30/09–01/10</div>
+      <h4>Coleta do corpus externo (2.849 itens)</h4>
+      <p>RSS automático, sem escolha manual. Mesmo formato do produto: boato citado × início da matéria.</p>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label">E4 · 01/10</div>
+      <h4>Combinações de dados → corpus externo é o que muda</h4>
+      <p>fr2021 + ext: F1 <strong>90,47</strong>. Modelos sem o externo ficam em 75–83. O Fake.br não acrescenta quando há o externo.</p>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label">E5 · 05/10</div>
+      <h4>12 variações de modelo → tudo empata (89–92%)</h4>
+      <p>char_wb(2,5) vai a 91,43. word + char sem lowercase vai a 92,25, mas é o menos robusto na E6.</p>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label">E6 · 05/10</div>
+      <h4>Validação por fonte → char_wb nunca perde</h4>
+      <p>Treinar sem E-farsas/Ag. Brasil e testar nelas: char_wb 80,20 × base 80,05. O modelo sem lowercase perde 3,5 pts.</p>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label">E7 · 05/10</div>
+      <h4>e5-small empata, mas sem medida de robustez</h4>
+      <p>F1 91,77 vs char_wb 91,43. Requer torch + 470 MB; não passou pela E6. Descartado por custo e incerteza.</p>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTADOS -->
+<section id="resultados">
+  <div class="section-tag">Resultados</div>
+  <h2>Avaliação final — única, pré-registrada, autorizada</h2>
+  <p class="lead">Testes 1 + 2: 116 itens coletados automaticamente, avaliados <strong>uma única vez</strong> em 05/10/2026.</p>
+
+  <div class="grid4" style="margin-bottom:24px">
+    <div class="card metric">
+      <div class="val green">94,2%</div>
+      <div class="lbl">F1 macro [IC 89–99]</div>
+    </div>
+    <div class="card metric">
+      <div class="val blue">100%</div>
+      <div class="lbl">Recall TRUE (85/85)</div>
+    </div>
+    <div class="card metric">
+      <div class="val orange">83,9%</div>
+      <div class="lbl">Recall FAKE (71/85 → <em>14/85 erros</em>)</div>
+    </div>
+    <div class="card metric">
+      <div class="val blue">5</div>
+      <div class="lbl">Erros totais (todos FAKE→TRUE)</div>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Método</th><th>Teste 1 (n=39)</th><th>Teste 2 (n=77)</th>
+        <th>1+2 (n=116)</th><th>Rec. FAKE</th><th>Rec. TRUE</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Fake.br (modelo antigo)</td><td>94,2</td><td>84,9</td><td>88,8 [81–95]</td><td>80,6%</td><td>95,3%</td></tr>
+        <tr><td>Fake.br + FR (candidato)</td><td>88,5</td><td>87,6</td><td>88,2 [80–94]</td><td>74,2%</td><td>97,6%</td></tr>
+        <tr><td>TF-IDF palavras [base]</td><td>88,0</td><td>93,9</td><td>91,7 [85–97]</td><td>77,4%</td><td>100,0%</td></tr>
+        <tr class="highlight">
+          <td><strong>TF-IDF char_wb(2,5)</strong> <span class="tag-escolhido">ESCOLHIDO</span></td>
+          <td><strong>88,0</strong></td><td><strong>98,1</strong></td><td><strong>94,2 [89–99]</strong></td>
+          <td><strong>83,9%</strong></td><td><strong>100,0%</strong></td>
+        </tr>
+        <tr><td>Palavras + chars sem lowercase</td><td>84,6</td><td>96,1</td><td>91,7 [85–97]</td><td>77,4%</td><td>100,0%</td></tr>
+        <tr><td>e5-small + LogReg</td><td>88,0</td><td>94,2</td><td>91,9 [85–97]</td><td>80,6%</td><td>98,8%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:16px; border-left: 4px solid var(--blue2)">
+    <h3>O que diz o intervalo de confiança</h3>
+    <p>Os ICs de todos os modelos com corpus externo se sobrepõem (89–97%). A ordem confirma a validação, mas o teste com 116 itens não permite declarar vencedor absoluto. O modelo escolhido foi decidido <strong>antes</strong> da avaliação — o teste só confirma a direção.</p>
+  </div>
+</section>
+
+<!-- VALIDAÇÃO 50 -->
+<section id="validacao">
+  <div class="section-tag">Validação de Demonstração</div>
+  <h2>50 notícias coletadas ao vivo — 5 folds</h2>
+  <p class="lead">25 TRUE (Agência Brasil) + 25 FAKE (Boatos.org + E-farsas), coletadas em 05/10/2026 via RSS, testadas com o modelo escolhido.</p>
+
+  <div class="grid4" style="margin-bottom:20px">
+    <div class="card metric">
+      <div class="val green">41/50</div>
+      <div class="lbl">Acertos globais</div>
+    </div>
+    <div class="card metric">
+      <div class="val blue">82%</div>
+      <div class="lbl">Acurácia</div>
+    </div>
+    <div class="card metric">
+      <div class="val blue">100%</div>
+      <div class="lbl">Recall TRUE</div>
+    </div>
+    <div class="card metric">
+      <div class="val orange">64%</div>
+      <div class="lbl">Recall FAKE</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h3>Resultado por fold</h3>
+    <div style="margin-top:14px">
+      <div class="bar-row"><div class="bar-label"><span>Fold 1</span><span>90%</span></div><div class="bar-bg"><div class="bar-fill" style="width:90%"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span>Fold 2</span><span>80%</span></div><div class="bar-bg"><div class="bar-fill" style="width:80%"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span>Fold 3</span><span>80%</span></div><div class="bar-bg"><div class="bar-fill" style="width:80%"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span>Fold 4</span><span>80%</span></div><div class="bar-bg"><div class="bar-fill" style="width:80%"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span>Fold 5</span><span>80%</span></div><div class="bar-bg"><div class="bar-fill" style="width:80%"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span><strong>Global</strong></span><span><strong>82%</strong></span></div><div class="bar-bg"><div class="bar-fill green" style="width:82%"></div></div></div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left: 4px solid var(--orange)">
+    <h3>Por que 82% e não 94%?</h3>
+    <p>Os boatos das páginas 5–10 do E-farsas são de períodos e temas variados — alguns com escrita mais jornalística. O Recall TRUE de 100% se mantém constante: o modelo nunca confunde notícia real com fake. A diferença está só nos boatos difíceis.</p>
+  </div>
+</section>
+
+<!-- LIMITAÇÕES -->
+<section id="limitacoes">
+  <div class="section-tag">Limitações</div>
+  <h2>O que o modelo não faz</h2>
+  <p class="lead">Documentadas honestamente — essenciais para o relatório e para qualquer uso em produção.</p>
+  <div class="grid2">
+    <div class="card limit-card">
+      <h3>1. Aprende estilo, não veracidade</h3>
+      <p>O modelo distingue "jornalismo profissional" de "site opinativo / WhatsApp". Uma fake escrita em padrão jornalístico tende a passar como TRUE — os 5 erros do teste oficial são todos desse tipo.</p>
+    </div>
+    <div class="card limit-card">
+      <h3>2. Fake.br dominado por uma fonte</h3>
+      <p>92,7% das fake do Fake.br vêm do Diário do Brasil. Nos experimentos anteriores, o modelo aprendia em parte a distinção "Diário do Brasil vs G1/Estadão".</p>
+    </div>
+    <div class="card limit-card">
+      <h3>3. Fontes novas custam ~10 pontos</h3>
+      <p>Na validação cruzada por fonte (E6), o desempenho cai de ~91% para ~80% em fontes não vistas no treino. Parte do ganho é assinatura de site, não generalização por conteúdo.</p>
+    </div>
+    <div class="card limit-card">
+      <h3>4. Descompasso temporal no treino</h3>
+      <p>Fake de 2022–jul/2026 × True de ago–out/2026. O modelo pode ter aprendido "assunto desta semana = true". O teste tem a mesma estrutura, então nem ele detecta esse atalho.</p>
+    </div>
+    <div class="card limit-card">
+      <h3>5. True do FakeRecogna são resumos automáticos</h3>
+      <p>As 2.330 true de treino do FakeRecogna são resumos gerados por modelo, não texto original. Pode haver atalho de estilo do resumidor.</p>
+    </div>
+    <div class="card limit-card">
+      <h3>6. IC largo com n=116</h3>
+      <p>F1 94,2% com IC [89–99]. Todos os modelos com corpus externo se sobrepõem. A medida confirma a direção mas não prova vencedor absoluto.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CONCLUSÃO -->
+<section>
+  <div class="section-tag">Conclusão</div>
+  <h2>O ganho real está nos dados</h2>
+  <p class="lead">A evolução de desempenho mostra que a escolha do corpus importa mais que a escolha do algoritmo.</p>
+  <div class="card" style="margin-bottom:20px">
+    <div style="margin-top:6px">
+      <div class="bar-row"><div class="bar-label"><span>Modelo antigo (só Fake.br)</span><span>~79%</span></div><div class="bar-bg"><div class="bar-fill" style="width:79%"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span>+ FakeRecogna 2020–21</span><span>~83%</span></div><div class="bar-bg"><div class="bar-fill" style="width:83%"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span>+ Corpus externo no formato do produto</span><span>~90%</span></div><div class="bar-bg"><div class="bar-fill" style="width:90%"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span><strong>+ char_wb(2,5) — modelo final</strong></span><span><strong>94,2%</strong></span></div><div class="bar-bg"><div class="bar-fill green" style="width:94.2%"></div></div></div>
+    </div>
+  </div>
+  <div class="grid3">
+    <div class="card metric">
+      <div class="val blue">modelos_finais/03.joblib</div>
+      <div class="lbl">Arquivo do modelo</div>
+    </div>
+    <div class="card metric">
+      <div class="val blue">sklearn 1.6.1</div>
+      <div class="lbl">Versão obrigatória</div>
+    </div>
+    <div class="card metric">
+      <div class="val blue">score ≥ 0</div>
+      <div class="lbl">Limiar → TRUE</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <strong>Detector de Fake News em Português</strong> &nbsp;·&nbsp; Residência em IA 2026 &nbsp;·&nbsp;
+  Modelo: TF-IDF char_wb(2,5) + LinearSVC &nbsp;·&nbsp; <code>modelos_finais/03.joblib</code> &nbsp;·&nbsp; sklearn 1.6.1
+</footer>
+
+</body>
+</html>

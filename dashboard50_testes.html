@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Dashboard 50 Notícias — Validação 5 Folds</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;color:#1a1d23}
+
+  header{background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:white;padding:32px 40px}
+  header h1{font-size:1.75rem;font-weight:700;margin-bottom:6px}
+  header p{opacity:.75;font-size:.9rem}
+
+  .container{max-width:1120px;margin:0 auto;padding:32px 20px}
+
+  /* METRICS */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px}
+  .metric-card{background:white;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);text-align:center}
+  .metric-card .val{font-size:2rem;font-weight:700;line-height:1;margin-bottom:5px}
+  .metric-card .lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b}
+  .metric-card.green .val{color:#16a34a} .metric-card.blue .val{color:#2563eb}
+  .metric-card.orange .val{color:#d97706} .metric-card.red .val{color:#dc2626}
+
+  /* FOLDS TABLE */
+  .folds-wrap{background:white;border-radius:12px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:28px}
+  .folds-wrap h2{font-size:1rem;font-weight:700;margin-bottom:14px;color:#1e3a5f}
+  table{width:100%;border-collapse:collapse;font-size:.875rem}
+  th{background:#f8fafc;text-align:left;padding:8px 10px;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:#64748b;border-bottom:2px solid #e2e8f0}
+  td{padding:9px 10px;border-bottom:1px solid #f1f5f9}
+  .fold-num{font-weight:600;width:70px}
+  .acc-bar-bg{display:inline-block;width:80px;height:8px;background:#f1f5f9;border-radius:4px;vertical-align:middle;margin-right:6px}
+  .acc-bar-fill{height:100%;border-radius:4px;background:#3b82f6}
+  .acc-bar-fill.global{background:#16a34a}
+  .acc-val{font-size:.8rem;color:#374151}
+  .global-row td{background:#f0fdf4}
+  tr:hover td{background:#fafbff}
+
+  /* SECTION */
+  .section-label{font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+                  color:#64748b;margin:28px 0 10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px}
+
+  /* CARDS */
+  .cards{display:flex;flex-direction:column;gap:14px}
+  .card{background:white;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);
+          overflow:hidden;border-left:5px solid #e2e8f0}
+  .card.acerto{border-left-color:#16a34a} .card.erro{border-left-color:#dc2626}
+  .card-header{display:flex;align-items:flex-start;gap:12px;padding:16px 18px 12px}
+  .badge-id{width:28px;height:28px;border-radius:50%;background:#f1f5f9;font-weight:700;
+              font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#475569}
+  .card-title{flex:1} .card-title h3{font-size:.9rem;font-weight:600;margin-bottom:3px}
+  .card-title h3 a{color:#1e3a5f;text-decoration:none} .card-title h3 a:hover{text-decoration:underline}
+  .card-title .meta{font-size:.76rem;color:#64748b}
+  .result-badges{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+  .badge{padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.03em}
+  .true-badge{background:#dbeafe;color:#1d4ed8} .fake-badge{background:#fee2e2;color:#b91c1c}
+  .ok-badge{background:#dcfce7;color:#15803d} .fail-badge{background:#fef2f2;color:#dc2626}
+  .real-label{border:1.5px solid #cbd5e1;background:transparent;color:#475569}
+  .fold-badge{background:#ede9fe;color:#6d28d9}
+  .card-body{padding:0 18px 16px}
+  .card-text{background:#f8fafc;border-radius:7px;padding:10px 12px;font-size:.84rem;
+              color:#374151;line-height:1.6;margin-bottom:12px;border:1px solid #e2e8f0}
+  .models-label{font-size:.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;
+                  letter-spacing:.05em;margin-bottom:6px;margin-top:10px}
+  .conf-row{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+  .conf-label{font-size:.75rem;color:#64748b;width:190px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .conf-bar-bg{flex:1;height:7px;background:#f1f5f9;border-radius:4px;overflow:hidden}
+  .conf-bar-fill{height:100%;border-radius:4px}
+  .fill-true{background:#3b82f6} .fill-fake{background:#f87171}
+  .conf-val{font-size:.72rem;color:#64748b;width:36px;text-align:right;flex-shrink:0}
+  .conf-cls{font-size:.7rem;font-weight:700;width:32px;flex-shrink:0}
+  .cls-true{color:#1d4ed8} .cls-fake{color:#b91c1c}
+  .error-box{background:#fffbeb;border:1px solid #fde68a;border-radius:7px;
+              padding:9px 12px;margin-bottom:10px;font-size:.8rem;color:#78350f;line-height:1.5}
+  .error-box strong{color:#92400e}
+
+  /* NOTE */
+  .note{background:white;border-radius:12px;padding:18px 22px;box-shadow:0 1px 4px rgba(0,0,0,.08);
+         font-size:.86rem;line-height:1.7;color:#374151;margin-top:24px}
+  .note p+p{margin-top:10px}
+
+  footer{text-align:center;padding:28px;font-size:.78rem;color:#94a3b8}
+</style>
+</head>
+<body>
+<header>
+  <h1>Validação com 50 Notícias — 5 Folds</h1>
+  <p>Modelo: TF-IDF char_wb(2,5) + LinearSVC balanceado &nbsp;·&nbsp; <strong>modelos_finais/03.joblib</strong>
+     &nbsp;·&nbsp; 25 TRUE (Agência Brasil) + 25 FAKE (Boatos.org / E-farsas) &nbsp;·&nbsp; 05/10/2026</p>
+</header>
+
+<div class="container">
+
+  <div class="metrics">
+    <div class="metric-card green">
+      <div class="val">41/50</div>
+      <div class="lbl">Acertos globais</div>
+    </div>
+    <div class="metric-card blue">
+      <div class="val">82.0%</div>
+      <div class="lbl">Acurácia</div>
+    </div>
+    <div class="metric-card orange">
+      <div class="val">81.4%</div>
+      <div class="lbl">F1 macro</div>
+    </div>
+    <div class="metric-card red">
+      <div class="val">9</div>
+      <div class="lbl">0 TRUE→FAKE &nbsp;·&nbsp; 9 FAKE→TRUE</div>
+    </div>
+  </div>
+
+  <div class="folds-wrap">
+    <h2>Avaliação por fold (5×10 itens — 5 TRUE + 5 FAKE cada)</h2>
+    <table>
+      <thead><tr>
+        <th>Fold</th><th>Acertos</th><th>Acurácia</th>
+        <th>F1 TRUE</th><th>Recall TRUE</th><th>F1 FAKE</th><th>Recall FAKE</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="fold-num">Fold 1</td>
+          <td>9/10</td>
+          <td>
+            <div class="acc-bar-bg"><div class="acc-bar-fill" style="width:90.0%"></div></div>
+            <span class="acc-val">90.0%</span>
+          </td>
+          <td>90.9%</td>
+          <td>100.0%</td>
+          <td>88.9%</td>
+          <td>80.0%</td>
+        </tr>
+        <tr>
+          <td class="fold-num">Fold 2</td>
+          <td>8/10</td>
+          <td>
+            <div class="acc-bar-bg"><div class="acc-bar-fill" style="width:80.0%"></div></div>
+            <span class="acc-val">80.0%</span>
+          </td>
+          <td>83.3%</td>
+          <td>100.0%</td>
+          <td>75.0%</td>
+          <td>60.0%</td>
+        </tr>
+        <tr>
+          <td class="fold-num">Fold 3</td>
+          <td>8/10</td>
+          <td>
+            <div class="acc-bar-bg"><div class="acc-bar-fill" style="width:80.0%"></div></div>
+            <span class="acc-val">80.0%</span>
+          </td>
+          <td>83.3%</td>
+          <td>100.0%</td>
+          <td>75.0%</td>
+          <td>60.0%</td>
+        </tr>
+        <tr>
+          <td class="fold-num">Fold 4</td>
+          <td>8/10</td>
+          <td>
+            <div class="acc-bar-bg"><div class="acc-bar-fill" style="width:80.0%"></div></div>
+            <span class="acc-val">80.0%</span>
+          </td>
+          <td>83.3%</td>
+          <td>100.0%</td>
+          <td>75.0%</td>
+          <td>60.0%</td>
+        </tr>
+        <tr>
+          <td class="fold-num">Fold 5</td>
+          <td>8/10</td>
+          <td>
+            <div class="acc-bar-bg"><div class="acc-bar-fill" style="width:80.0%"></div></div>
+            <span class="acc-val">80.0%</span>
+          </td>
+          <td>83.3%</td>
+          <td>100.0%</td>
+          <td>75.0%</td>
+          <td>60.0%</td>
+        </tr>
+        <tr class="global-row">
+          <td class="fold-num"><strong>GLOBAL</strong></td>
+          <td><strong>41/50</strong></td>
+          <td>
+            <div class="acc-bar-bg"><div class="acc-bar-fill global" style="width:82.0%"></div></div>
+            <span class="acc-val"><strong>82.0%</strong></span>
+          </td>
+          <td><strong>84.7%</strong></td>
+          <td><strong>100.0%</strong></td>
+          <td><strong>78.0%</strong></td>
+          <td><strong>64.0%</strong></td>
+        </tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-label">Notícias verdadeiras — Agência Brasil (25 itens)</div>
+  <div class="cards">
+    <div class="card acerto" id="item-1">
+      <div class="card-header">
+        <div class="badge-id">1</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/cresce-numero-de-mulheres-eleitas-para-o-congresso-nacional" target="_blank">Cresce número de mulheres eleitas para o Congresso Nacional</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A bancada feminina na Câmara dos Deputados e no Senado Federal será a maior da história. Na Câmara, o número de mulheres eleitas passou de 90 para 109, um crescimento de 21%. O resultado ocorreu apesar de uma queda no número de candidatas. Em 2022, 3.317 mulheres concorreram ao cargo</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:54%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.350</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:43%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.070</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:42%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.040</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:27%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.665</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:6%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.161</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-2">
+      <div class="card-header">
+        <div class="badge-id">2</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/justica/noticia/2026-10/tse-quer-parecer-do-mp-antes-de-decisao-sobre-recurso-de-garotinho" target="_blank">TSE quer parecer do MP antes de decisão sobre recurso de Garotinho</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O ministro Floriano de Azevedo Marques, do Tribunal Superior Eleitoral (TSE), concedeu prazo de dois dias para a Procuradoria-Geral Eleitoral (PGE) se manifestar sobre o pedido do candidato ao governo do Rio de Janeiro Anthony Garotinho (Republicanos) para desistir de um recurso apresentado à Corte. Após receber o parecer da</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:41%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.028</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:48%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.207</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:67%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.668</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:47%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.183</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:41%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.016</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-3">
+      <div class="card-header">
+        <div class="badge-id">3</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/filho-de-arthur-lira-se-torna-o-mais-jovem-deputado-federal-ja-eleito" target="_blank">Filho de Arthur Lira se torna o mais jovem deputado federal já eleito</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O alagoano Alvinho Lira (PP-AL), filho do ex-presidente da Câmara dos Deputados Arthur Lira (PP-AL), se tornou o deputado federal eleito mais jovem da história do país nas eleições de 2026. Alvinho tem 20 anos e, em 17 de março de 2027, completará 21, a idade mínima para se tornar</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:74%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.840</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:76%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.904</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:79%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.978</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:67%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.681</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:15%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.383</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-4">
+      <div class="card-header">
+        <div class="badge-id">4</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/direitos-humanos/noticia/2026-10/representacao-de-parlamentares-negros-segue-baixa-diz-pesquisadora" target="_blank">Representação de parlamentares negros segue baixa, diz pesquisadora</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A redução no número de parlamentares pardos e pretos de 139 para 135 na Câmara dos Deputados tem um significado que vai além dos números, para a cientista política Evelyn Apolinária. Segundo a pesquisadora e professora do Centro Universitário de Brasília (Ceub), o dado mais relevante não é a perda</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:45%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.121</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:8%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.197</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:17%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.414</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:3%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.080</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:5%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.133</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-5">
+      <div class="card-header">
+        <div class="badge-id">5</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/renovacao-da-camara-federal-chegou-35-veja-nova-composicao-da-casa" target="_blank">Renovação da Câmara federal chegou a 35%; veja nova composição da Casa</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Com base nos dados do Tribunal Superior Eleitoral (TSE), a Câmara dos Deputados confirmou que entre os 513 deputados federais eleitos neste domingo (4), 183 vão exercer seu primeiro mandato. Esse número representa uma taxa de renovação de 35,67% dos integrantes da Casa. Os parlamentares representarão os estados e o</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:42%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.042</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:37%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.920</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:43%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.087</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:5%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.134</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:5%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.116</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-6">
+      <div class="card-header">
+        <div class="badge-id">6</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/dolar-cai-r-5-e-bolsa-sobe-quase-8-apos-primeiro-turno" target="_blank">Dólar cai a R$ 5, e bolsa sobe quase 8% após primeiro turno</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O mercado financeiro brasileiro reagiu com forte alta nesta segunda-feira (5) ao resultado do primeiro turno das eleições presidenciais. O dólar caiu para a casa dos R$ 5, enquanto o Ibovespa avançou quase 8% e ultrapassou pela primeira vez os 200 mil pontos. No exterior, ativos brasileiros também registraram forte</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:67%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.668</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:56%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.396</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:73%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.821</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:48%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.212</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:30%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.749</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-7">
+      <div class="card-header">
+        <div class="badge-id">7</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/policia-federal-apreende-r-28-milhoes-no-primeiro-turno-das-eleicoes" target="_blank">Polícia Federal apreende R$ 2,8 milhões no primeiro turno das eleições</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A Polícia Federal (PF) apreendeu R$ 2,8 milhões durante o primeiro turno das eleições, realizado nesse domingo (4). Do total, R$ 520 mil foram em espécie. O restante foi em forma de bens. A PF atuou na prevenção e repressão de crimes eleitorais. Até as 23h59 do domingo foram instaurados</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:82%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">2.042</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:39%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.971</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:64%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.601</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:15%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.379</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:8%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.204</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-8">
+      <div class="card-header">
+        <div class="badge-id">8</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/cultura/noticia/2026-10/mostra-de-cinema-de-sp-chega-aos-50-anos-com-homenagem-james-gray" target="_blank">Mostra de Cinema de SP chega aos 50 anos com homenagem a James Gray</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Os 50 anos da Mostra Internacional de Cinema de São Paulo serão celebrados em uma série de eventos que vão ocupar não apenas salas de exibição, mas também espaços culturais da capital paulista, entre 15 e 29 de outubro. A programação conta com 380 filmes de 93 países e ainda</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:40%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.010</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:62%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.561</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:52%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.292</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:69%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.735</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:42%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.053</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-9">
+      <div class="card-header">
+        <div class="badge-id">9</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/justica/noticia/2026-10/bolsonaro-pede-liberacao-de-visitas-de-flavio-na-prisao-domiciliar" target="_blank">Bolsonaro pede liberação de visitas de Flávio na prisão domiciliar</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O ex-presidente Jair Bolsonaro pediu nesta segunda-feira (5) ao Supremo Tribunal Federal (STF) a liberação das visitas do senador Flávio Bolsonaro (PL) na prisão domiciliar. Na petição encaminhada ao Supremo, a defesa diz que a decisão do ministro Alexandre de Moraes que determinou a suspensão da visitação pelo prazo de</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:54%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.340</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:58%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.449</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:53%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.316</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:71%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.768</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:39%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.967</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-10">
+      <div class="card-header">
+        <div class="badge-id">10</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/esportes/noticia/2026-10/campea-brasileira-carol-gil-e-convocada-para-amistosos-da-selecao" target="_blank">Campeã do Brasileirão, Carol Gil é convocada para amistosos da seleção</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Campeã do Brasileirão Feminino no último sábado (3), a zagueira do São Paulo Carol Gil se juntará à seleção brasileira para os amistosos contra a Argentina nos dias 10 e 13 de outubro, em Recife e Porto Alegre, respectivamente. A atleta foi convocada pelo técnico Arthur Elias nesta segunda-feira (5)</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:30%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.762</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:38%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.952</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:47%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.171</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:49%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.226</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:63%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.575</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-11">
+      <div class="card-header">
+        <div class="badge-id">11</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/votacao-em-sp-registra-indice-de-abstencao-de-225-no-primeiro-turno" target="_blank">Votação em SP registra índice de abstenção de 22,5% no primeiro turno</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O primeiro turno das Eleições Gerais de 2026 registrou taxa de abstenção de 22,5% no estado de São Paulo, de acordo com dados divulgados pelo Tribunal Superior Eleitoral (TSE). O percentual no estado é superior à média nacional, que registrou abstenção de 21,6%. Os números indicam que dos mais de</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:57%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.434</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:56%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.393</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:75%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.863</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:39%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.974</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:7%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.184</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-12">
+      <div class="card-header">
+        <div class="badge-id">12</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/garotinho-desiste-de-recurso-e-eleicao-do-rj-pode-acabar-em-1o-turno" target="_blank">Garotinho desiste de recurso e eleição do RJ pode acabar em 1º turno</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O candidato ao governo do Rio de Janeiro Anthony Garotinho (Republicanos) anunciou, nesta segunda-feira (5), que desistiu do recurso que mantinha no Tribunal Superior Eleitoral (TSE) para se manter na disputa. A decisão foi anunciada pelo próprio candidato, o terceiro mais votado na eleição de domingo (4). Com o movimento,</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:57%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.430</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:76%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.909</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:84%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">2.101</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:90%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">2.238</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:84%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">2.103</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-13">
+      <div class="card-header">
+        <div class="badge-id">13</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/eleicoes-2026-veja-quem-sao-os-deputados-estaduais-eleitos-por-sp" target="_blank">Eleições 2026: veja quem são os deputados estaduais eleitos por SP</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Neste domingo (4), no primeiro turno das Eleições 2026, os eleitores do estado de São Paulo foram às urnas para escolher presidente, senadores, governador, deputados federais e também estaduais. Os votantes elegeram 94 deputados para a Assembleia Legislativa paulista. Com 100% das urnas apuradas, a maior votação para a Alesp</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:52%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.304</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:62%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.539</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:59%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.464</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:52%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.290</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:23%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.572</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-14">
+      <div class="card-header">
+        <div class="badge-id">14</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/mineira-de-21-anos-e-mulher-mais-jovem-a-ser-eleita-deputada-federal" target="_blank">Mineira de 21 anos é mulher mais jovem a ser eleita deputada federal</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A deputada federal mais jovem eleita na disputa deste domingo (4) por Minas Gerais foi Ana Elisa Santos Silva, 21 anos, do PT. Com 1, 9 milhão de seguidores em apenas uma rede social, ela se destaca por abordar temas como racismo, feminismo e direitos sociais. Negra e nascida em</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:78%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.953</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:42%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.062</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:66%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.647</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:44%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.103</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:13%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.326</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-15">
+      <div class="card-header">
+        <div class="badge-id">15</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/terceiro-colocado-cury-fala-em-manter-silencio-no-segundo-turno" target="_blank">Terceiro colocado, Cury fala em manter “silêncio” no segundo turno</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O candidato à Presidência da República pelo Avante, Augusto Cury, afirmou que vai ficar em “silêncio” em relação ao segundo turno, que será disputado entre o candidato à reeleição Luiz Inácio Lula da Silva e o senador do PL pelo Rio de Janeiro (RJ) Flávio Bolsonaro. &quot;Eu me silencio completamente</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:30%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.748</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:25%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.624</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:23%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.573</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:11%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.286</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:12%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.312</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-16">
+      <div class="card-header">
+        <div class="badge-id">16</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/politica/noticia/2026-10/pl-elege-19-senadores-e-soma-28-mdb-conquista-sete-vagas-e-pt-seis" target="_blank">PL elege 19 senadores e soma 28; MDB conquista sete vagas e PT, seis</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">As eleições de 2026 definiram os 54 senadores que ocuparão as vagas em disputa no Senado Federal a partir de 2027. Entre os partidos, o PL foi o que mais elegeu representantes, com 19 cadeiras. - MDB e PT aparecem na sequência, com sete e seis eleitos, respectivamente; - PP,</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:18%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.457</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:52%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.306</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:36%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.897</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:23%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.576</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:11%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.280</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-17">
+      <div class="card-header">
+        <div class="badge-id">17</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/prazo-para-sacar-dinheiro-das-bets-termina-nesta-segunda" target="_blank">Prazo para sacar dinheiro das bets termina nesta segunda</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Quem ainda tem dinheiro em sites de apostas esportivas e jogos virtuais tem até as 23h59 desta segunda-feira (5) para solicitar o saque diretamente nas plataformas. A partir da 0h de terça-feira (6), os sites e aplicativos deverão ser retirados do ar. A medida faz parte da Medida Provisória (MP)</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:53%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.333</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:35%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.867</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:47%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.166</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:24%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.603</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:26%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.644</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-18">
+      <div class="card-header">
+        <div class="badge-id">18</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/fenabrave-emplacamentos-passam-de-500-mil-e-batem-recorde-em-setembro" target="_blank">Fenabrave: emplacamentos passam de 500 mil e batem recorde em setembro</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Emplacamentos de veículos bateram recorde para o mês, em setembro. Foram registradas 509.686 unidades – crescimento de 8,32% na comparação com setembro de 2025 e de 1,15% sobre agosto. Os dados são da Federação Nacional da Distribuição de Veículos Automotores (Fenabrave). Esse resultado engloba a venda de automóveis, comerciais leves</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:32%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.798</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:35%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.872</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:36%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.889</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:21%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.533</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:15%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.381</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-19">
+      <div class="card-header">
+        <div class="badge-id">19</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/focus-mercado-eleva-previsao-da-inflacao-para-501-em-2026" target="_blank">Focus: mercado eleva previsão da inflação para 5,01% em 2026</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A projeção do mercado financeiro para a inflação oficial em 2026 subiu de 4,99% para 5,01%, segundo o Boletim Focus divulgado nesta segunda-feira (5) pelo Banco Central. Foi a terceira alta consecutiva da estimativa para o Índice Nacional de Preços ao Consumidor Amplo (IPCA), considerado a inflação oficial do país.</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:70%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.746</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:57%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.434</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:63%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.579</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:60%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.493</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:37%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.916</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-20">
+      <div class="card-header">
+        <div class="badge-id">20</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/petrobras-atinge-recorde-de-valor-de-mercado-apos-descoberta-no-amapa" target="_blank">Petrobras atinge recorde de valor de mercado após descoberta no Amapá</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A Petrobras atingiu R$ 700,08 bilhões no encerramento do pregão na B3, a Bolsa de Valores de São Paulo, nesta sexta-feira (2), batendo o recorde de valor de mercado, como informado pela própria companhia. O recorde ocorreu após o anúncio de uma nova descoberta de petróleo em águas ultraprofundas, na</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:5%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.127</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:14%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.354</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:17%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.418</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:32%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.802</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:48%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.202</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-21">
+      <div class="card-header">
+        <div class="badge-id">21</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/preco-do-limao-esta-acima-da-media-mesmo-na-entressafra" target="_blank">Preço do limão está acima da média, mesmo na entressafra</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Mesmo em período de entressafra, o limão está caro para o consumidor além da média. A razão está na pouca produção, e quem tem cobra pela dificuldade em garantir a colheita. &quot;O limão tem como uma de suas características ter uma volatilidade muito alta em seu histórico de preços, diferente</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:3%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.082</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:7%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.178</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:1%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.033</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:3%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.077</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:6%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.144</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-22">
+      <div class="card-header">
+        <div class="badge-id">22</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/nova-descoberta-aumenta-expectativa-da-petrobras-na-foz-do-amazonas" target="_blank">Nova descoberta aumenta expectativa da Petrobras na Foz do Amazonas</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A presidente da Petrobras, Magda Chambriard, disse nesta sexta-feira (2) que a segunda descoberta de petróleo no poço Morpho, na bacia da Foz do Amazonas, aumenta as expectativas pela abertura de uma nova fronteira exploratória no país. O poço identificado como 1-BRSA-1405-APS fica em águas ultra profundas, em lâmina d’água</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:22%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.554</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:58%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.444</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:49%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.222</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:33%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.835</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:23%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.587</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-23">
+      <div class="card-header">
+        <div class="badge-id">23</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/distribuidoras-se-preparam-para-garantir-energia-no-dia-da-eleicao" target="_blank">Distribuidoras se preparam para garantir energia no dia da eleição</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">As distribuidoras de energia elétrica devem ter planos especiais de atendimento para garantir o fornecimento durante a votação e a apuração das eleições gerais no próximo domingo (4). A determinação é da Agência Nacional de Energia Elétrica (Aneel), vinculada ao Ministério de Minas e Energia e que atua como reguladora</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:57%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.433</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:44%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.108</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:47%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.178</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:44%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.111</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:25%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.613</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-24">
+      <div class="card-header">
+        <div class="badge-id">24</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/embraer-tem-alta-de-6-nas-entregas-no-terceiro-trimestre" target="_blank">Embraer tem alta de 6% nas entregas no terceiro trimestre</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A Embraer divulgou nesta sexta-feira (2) o desempenho de entrega de aeronaves no terceiro trimestre deste ano. No período, a empresa entregou 66 aviões entregues, aumento de 6% na comparação com o mesmo período de 2025. A maioria das vendas foi de modelos da aviação executiva, como Phenom 300, Praetor</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:59%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.480</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:59%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.480</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:64%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.601</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:74%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.843</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:53%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.337</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-25">
+      <div class="card-header">
+        <div class="badge-id">25</div>
+        <div class="card-title">
+          <h3><a href="https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/movimentacao-das-bets-cai-r-652-milhoes-por-dia-apos-proibicao" target="_blank">Movimentação das bets cai R$ 652 milhões por dia após proibição</a></h3>
+          <div class="meta">Agência Brasil &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: TRUE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">As medidas adotadas pelo governo federal para encerrar as apostas de quota fixa reduziram em 31% os recursos mantidos pelos usuários nas plataformas. Em balanço divulgado nesta sexta-feira (2), os ministros da Fazenda, Dario Durigan, e da Justiça e Segurança Pública, Wellington César Lima e Silva, informaram que o saldo</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:68%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.691</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:51%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.267</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:52%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.309</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:44%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.110</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:42%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.044</span></div>
+      </div>
+    </div></div>
+
+  <div class="section-label">Boatos verificados — Boatos.org &amp; E-farsas (25 itens)</div>
+  <div class="cards">
+    <div class="card acerto" id="item-26">
+      <div class="card-header">
+        <div class="badge-id">26</div>
+        <div class="card-title">
+          <h3><a href="https://www.boatos.org/politica/fake-news-sobre-morte-carlos-alberto-de-nobrega-se-espalha-em-outubro-de-2026.html" target="_blank">Fake news sobre morte Carlos Alberto de Nóbrega se espalha em outubro de 2026</a></h3>
+          <div class="meta">Boatos.org &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">COMUNICADO – DE LUTO DE CARREIRA CARLOS A. DE NÓBREGA 12/03/1936 | 25/09/2026 Ele segue bem, apenas fim de carreira nas telinhas brasileiras. Morte de Carlos Alberto da Nóbrega: “Morre Carlos Alberto de Nóbrega aos 86 anos após gravação de programa no SBT. Aperte no coração se você gostava de</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:60%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.504</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:37%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.937</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:67%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.685</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:6%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.141</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:3%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.078</span></div>
+      </div>
+    </div>
+
+    <div class="card erro" id="item-27">
+      <div class="card-header">
+        <div class="badge-id">27</div>
+        <div class="card-title">
+          <h3><a href="https://www.boatos.org/politica/e-falso-que-eduarda-campopiano-tenha-declarado-ser-contra-o-voto-feminino.html" target="_blank">É falso que Eduarda Campopiano tenha declarado ser contra o voto feminino</a></h3>
+          <div class="meta">Boatos.org &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">você tem direitos?” só pq você tem direitos hoje não significa que você terá direitos amanhã. (eduarda campopiano foi eleita para o cargo de deputada estadual em São Paulo, uma “mulher” que é contra o voto feminino, antifeminista, conservadora, contra cotas, é real, o nosso direito hoje pode ser questionado</div>
+        <div class="error-box"><strong>Por que errou?</strong> Confiança muito baixa — modelo praticamente na fronteira de decisão.</div>
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:4%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.101</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:23%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.583</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:4%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.105</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:25%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.629</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:35%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.878</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-28">
+      <div class="card-header">
+        <div class="badge-id">28</div>
+        <div class="card-title">
+          <h3><a href="https://www.boatos.org/politica/tse-vai-investigar-se-atraso-na-divulgacao-de-resultados-das-eleicoes-tem-relacao-com-fraude-contra-flavio-bolsonaro.html" target="_blank">É falso que atraso na apuração prove fraude contra Flávio Bolsonaro no 1º turno das eleições</a></h3>
+          <div class="meta">Boatos.org &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">ATENÇÃO! ASSUNTO URGENTE TRIBUNAL SUPERIOR ELETTORAL TSE VAI INVESTIGAR O ATRASO NA ATUALIZAÇÃO DO SISTEMA DURANTE A APÚRAÇÃO DO 1º TURNO SEGUNDO FONTES, ALGUNS PONTOS JA FORAM DETECTADOS E ANALISADOS NESTA SEGUNDA-FEIRA APURAÇÃO ESTAREMOS DE OLHO EM TUDO! “🚨 ATENÇÃO: O QUE VOCÊ ESTÁ VENDO PODE VIRAR MANCHETE NAS PRÓXIMAS</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:27%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.670</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:9%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.235</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:84%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">2.098</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:9%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.213</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:2%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.054</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-29">
+      <div class="card-header">
+        <div class="badge-id">29</div>
+        <div class="card-title">
+          <h3><a href="https://www.boatos.org/politica/lula-jogou-bandeira-do-brasil-no-chao-apos-votar-nas-eleicoes-2026.html" target="_blank">Ao contrário do que apontam montagens, Lula não jogou a bandeira do Brasil no chão após votar</a></h3>
+          <div class="meta">Boatos.org &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Lula e a bandeira: Após voto Lula embola e joga a bandeira no chão? QUAL SUA OPINIÃO? Vídeos que circulam nas redes sociais mostram o presidente Lula arremessando uma bandeira do Brasil após votar. A cena gerou controvérsia e críticas, com internautas afirmando que ele “jogou a bandeira no chão”.</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:60%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.509</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:62%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.551</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:64%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.588</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:46%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.151</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:17%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.423</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-30">
+      <div class="card-header">
+        <div class="badge-id">30</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/a-xuxa-gravou-video-criticando-falas-do-presidente-lula-sobre-toque-em-criancas.html" target="_blank">A Xuxa gravou vídeo criticando falas do presidente Lula sobre toque em crianças?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">[…] Eu estava em Brasília, na comunidade de São Sebastião, se eu não me engano, em um sábado de moto […] parei a moto em uma esquina, tirei o capacete, e olhei umas menininhas… Três, quatro, bonitas, de 14, 15 anos, arrumadinhas, num sábado, em uma comunidade, e vi que</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:24%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.588</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:2%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.052</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:18%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.440</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:7%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.165</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:4%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.105</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-31">
+      <div class="card-header">
+        <div class="badge-id">31</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/o-ibge-vai-incluir-o-trafico-de-drogas-no-calculo-do-pib.html" target="_blank">O IBGE vai incluir o tráfico de drogas no cálculo do PIB?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">[…]Além dos tópicos mencionados acima a nova base trará mudanças também em outros tópicos, como por exemplo: tratamento das holdings; novas estimativas de contrabando e jogos de azar; nova estimativa da produção das famílias; maior abertura dos setores institucionais; nova estimativa e distribuição de Serviços financeiros indiretamente medidos – SIFIM;</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:14%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.358</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:10%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.249</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:6%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.155</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:13%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.316</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:31%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.771</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-32">
+      <div class="card-header">
+        <div class="badge-id">32</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/a-inteligencia-artificial-pode-alterar-votos-na-urna-eletronica.html" target="_blank">A inteligência artificial pode alterar votos na urna eletrônica?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Sem conexão com internet, bluetooth ou rede de telefonia celular, urnas não podem ser invadidas por IA. Segurança do sistema também impede que comandos externos modifiquem informações nas urnas. Quem decide o voto é o eleitor, que digita o número, confere na tela o nome, a foto e o cargo</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:17%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.414</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:41%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.030</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:27%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.666</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:21%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.529</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:8%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.212</span></div>
+      </div>
+    </div>
+
+    <div class="card erro" id="item-33">
+      <div class="card-header">
+        <div class="badge-id">33</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/fotografia-encontrada-em-tumba-egipcia-provou-que-a-viagem-no-tempo-e-real.html" target="_blank">Fotografia encontrada em tumba egípcia provou que a viagem no tempo é real?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 23 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Um cientista brilhante preso entre linhas temporais. Um homem que surge em ruínas antigas, guerras futuras e eventos catastróficos ao longo dos séculos.</div>
+        <div class="error-box"><strong>Por que errou?</strong> O boato tem estilo de redação jornalística ou cita instituições reais, fazendo o modelo classificar como TRUE. Limitação conhecida do modelo.</div>
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:29%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.729</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:7%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.163</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:16%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.401</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:12%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.296</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:14%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.353</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-34">
+      <div class="card-header">
+        <div class="badge-id">34</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/a-coca-cola-diminuiu-seu-produto-por-causa-da-politica-de-lula.html" target="_blank">A Coca-Cola diminuiu seu produto por causa da política de Lula?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Estão circulando algumas matérias sobre uma suposta saída da Coca-Cola do Brasil e sobre o fim da circulação das garrafas de 2L, mas essas informações não são verdadeiras. A Coca-Cola foca em oferecer ao consumidor um portfólio amplo e flexível, com diferentes opções de bebidas, com ou sem açúcar e</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:13%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.316</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:29%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.725</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:22%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.548</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:34%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.839</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:8%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.206</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-35">
+      <div class="card-header">
+        <div class="badge-id">35</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/bruno-mars-plagiou-a-musica-imprevistos-de-pablo.html" target="_blank">Bruno Mars plagiou a música ‘Imprevistos’ de Pablo?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 45 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O que eu posso dizer é que fiquei surpreso com a comparação e, ao mesmo tempo, orgulhoso de ver uma música do nosso repertório sendo colocada lado a lado com um artista do tamanho de Bruno Mars.” – Pablo do Arrocha ao jornal A Tarde</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:37%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.922</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:9%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.221</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:15%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.371</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:8%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.212</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:23%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.568</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-36">
+      <div class="card-header">
+        <div class="badge-id">36</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/o-presidente-da-escola-de-samba-que-homenageou-lula-e-reu-por-morte-de-uma-crianca.html" target="_blank">O presidente da escola de samba que homenageou Lula é réu por morte de uma criança?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 47 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A investigação apurou que o cavalo mecânico e o carro alegórico da escola de samba deslocavam-se acoplados no sentido destinado à retirada do veículo da dispersão do Sambódromo. O carro chocou-se contra um poste de concreto, esmagando a vítima”, informou a Secretaria de Estado de Polícia Civil.</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:24%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.597</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:27%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.684</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:3%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.068</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:26%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.661</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:25%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.627</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-37">
+      <div class="card-header">
+        <div class="badge-id">37</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/caso-havaianas-o-que-ha-por-tras-das-campanhas-de-boicote-online.html" target="_blank">Caso Havaianas: O que há por trás das campanhas de boicote online?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Em comercial veiculado em 2014, na época da Copa do Mundo do Brasil, o ex-jogador Romário aparece assistindo a um jogo usando apenas um chinelo. Ao ser questionado por um amigo, Romário explicava que o pé esquerdo “tá com quem merece”, em uma brincadeira com a rivalidade futebolística envolvendo o</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:2%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.049</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:29%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.721</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:25%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.616</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:36%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.912</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:33%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.830</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-38">
+      <div class="card-header">
+        <div class="badge-id">38</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/trump-acusou-lula-de-derrubar-100-mil-arvores-para-a-cop30.html" target="_blank">Trump acusou Lula de derrubar 100 mil árvores para a COP30?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 35 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Eles destruíram a floresta amazônica no Brasil para a construção de uma rodovia de quatro faixas para que ambientalistas pudessem viajar”, escreveu Donald Trump na mensagem, acrescentando que o caso “se tornou um grande escândalo”.</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:16%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.403</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:14%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.343</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:15%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.376</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:8%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.199</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:5%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.125</span></div>
+      </div>
+    </div>
+
+    <div class="card erro" id="item-39">
+      <div class="card-header">
+        <div class="badge-id">39</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/o-governo-federal-vai-criar-auxilio-para-as-familias-traficantes-mortos-no-rj.html" target="_blank">O Governo Federal vai criar auxílio para as famílias traficantes mortos no RJ?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O Ministério dos Direitos Humanos e da Cidadania (MDHC) esclarece que não procede a informação. A visita da ministra Macaé Evaristo ao estado teve como principal objetivo a articulação para retomada imediata dos serviços públicos de educação, saúde e assistência social nas áreas impactadas. Informamos ainda que o MDHC abriu</div>
+        <div class="error-box"><strong>Por que errou?</strong> O boato tem estilo de redação jornalística ou cita instituições reais, fazendo o modelo classificar como TRUE. Limitação conhecida do modelo.</div>
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:45%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.117</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:33%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.826</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:36%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.899</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:37%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.919</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:12%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.311</span></div>
+      </div>
+    </div>
+
+    <div class="card erro" id="item-40">
+      <div class="card-header">
+        <div class="badge-id">40</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/agua-contaminada-com-metanol-comecou-a-sair-cor-de-rosa-das-torneiras-em-itu.html" target="_blank">Água contaminada com metanol começou a sair cor-de-rosa das torneiras em Itu?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Por conta de um incidente ocorrido na madrugada de segunda (29) para terça-feira, algumas residências da região do São Luiz / Pq. América receberam água com uma coloração rosa. A cor se deve à presença de produto utilizado no processo de tratamento da água. E uma apuração interna deve indicar</div>
+        <div class="error-box"><strong>Por que errou?</strong> O boato tem estilo de redação jornalística ou cita instituições reais, fazendo o modelo classificar como TRUE. Limitação conhecida do modelo.</div>
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:44%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.113</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:15%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.366</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:23%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.582</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:18%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.448</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:30%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.750</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-41">
+      <div class="card-header">
+        <div class="badge-id">41</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/o-cantor-daniel-declarou-apoio-a-bolsonaro.html" target="_blank">O cantor Daniel declarou apoio a Bolsonaro?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Não sei até que ponto é interessante quando há uma manifestação o artista se manifestar também. Tem que ter um certo cuidado em relação a isso para não piorar ainda mais as coisas […] Eu mando um recadinho na boa, cantando sem parar, para a pessoa entender que a gente</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:36%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.909</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:55%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.379</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:55%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.375</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:53%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.333</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:19%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.464</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-42">
+      <div class="card-header">
+        <div class="badge-id">42</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/o-ministro-dino-se-autoabsolveu-em-acao-de-r-141-milhoes.html" target="_blank">O ministro Dino se autoabsolveu em ação de R$ 141 milhões?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A tramitação da presente ação popular encontrava-se suspensa, por força da decisão que determinou o apensamento com a ação anulatória proposta pelo Estado do Maranhão e a EMAP contra a União e a ANTAQ […] Por equívoco, esta ação popular foi incluída entre os processos aptos para sentença, tendo em</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:5%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.126</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:15%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.370</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:3%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.065</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:19%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.483</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:27%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.685</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-43">
+      <div class="card-header">
+        <div class="badge-id">43</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/o-governo-federal-vendeu-minas-de-niquel-para-a-china-por-u500-milhoes.html" target="_blank">O Governo Federal vendeu minas de níquel para a China por U$500 milhões?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 41 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A venda do nosso negócio de níquel, após um processo altamente competitivo, marca mais um importante passo rumo à simplificação do nosso portfólio, para a criação de uma empresa mais valiosa, focada em cobre, minério de ferro premium e nutrientes agrícolas</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:6%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.156</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:6%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.152</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:2%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.062</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:10%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.254</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:9%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.222</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-44">
+      <div class="card-header">
+        <div class="badge-id">44</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/mulheres-estao-roubando-com-maquininha-de-aproximacao.html" target="_blank">Mulheres estão roubando com maquininha de aproximação?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 36 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Tome muito cuidado, não coloque o cartão em local que seja fácil a aproximação da máquina sem que você possa ver, principalmente em situações de aglomeração. Fique atento e não termine o seu Carnaval no prejuízo!</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:53%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.317</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:42%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.060</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:44%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">1.109</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:25%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.622</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:7%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.166</span></div>
+      </div>
+    </div>
+
+    <div class="card acerto" id="item-45">
+      <div class="card-header">
+        <div class="badge-id">45</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/o-papa-leao-xiv-disse-que-a-igreja-vai-excomungar-os-comunistas.html" target="_blank">O papa Leão XIV disse que a Igreja vai excomungar os comunistas?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: FAKE</span>
+          <span class="badge ok-badge">ACERTO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Já foi dito muitas vezes, e minha resposta sempre foi que são os comunistas que pensam como cristãos. Cristo falou de uma sociedade onde os pobres, os fracos, os excluídos são os que decidem. Não os demagogos, não os Barrabás, mas o povo, os pobres, tenham ou não fé no</div>
+        
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:31%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.766</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:28%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.709</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:37%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.931</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:24%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.608</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:16%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.401</span></div>
+      </div>
+    </div>
+
+    <div class="card erro" id="item-46">
+      <div class="card-header">
+        <div class="badge-id">46</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/uma-funcionaria-processou-empresa-que-lhe-negou-licenca-maternidade-de-um-bebe-reborn.html" target="_blank">Uma funcionária processou empresa que lhe negou licença-maternidade de um bebê reborn?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 1</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Em razão da grande repercussão midiática que a causa gerou nacionalmente e dos impactos provocados e risco de dano à integridade física da reclamante e da sua advogada, bem como, a imagem e a honra, requer, seja o processo colocado em segredo de justiça, bem como requer a desistência da</div>
+        <div class="error-box"><strong>Por que errou?</strong> O boato tem estilo de redação jornalística ou cita instituições reais, fazendo o modelo classificar como TRUE. Limitação conhecida do modelo.</div>
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:20%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.503</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:7%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.178</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:18%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.448</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:32%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.800</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:18%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.461</span></div>
+      </div>
+    </div>
+
+    <div class="card erro" id="item-47">
+      <div class="card-header">
+        <div class="badge-id">47</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/e-verdade-que-o-hospital-do-homem-vai-fechar-por-falta-de-pacientes.html" target="_blank">É verdade que o Hospital do Homem vai fechar por falta de pacientes?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 50 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 2</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">Em sua estrutura, o Hospital conta com 153 leitos de internação, 14 leitos de transplante de Medula Óssea, nove salas de cirurgia e três Unidades de Terapia Intensiva. A unidade realiza cirurgias nas áreas de cirurgia geral, neuro vascular, para doença de Parkinson e epilepsia, urológicas, oftalmológicas, para tumores de</div>
+        <div class="error-box"><strong>Por que errou?</strong> O boato tem estilo de redação jornalística ou cita instituições reais, fazendo o modelo classificar como TRUE. Limitação conhecida do modelo.</div>
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:37%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.929</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:38%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.960</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:38%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.958</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:44%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.106</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:44%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.089</span></div>
+      </div>
+    </div>
+
+    <div class="card erro" id="item-48">
+      <div class="card-header">
+        <div class="badge-id">48</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/o-candidato-portugues-andre-ventura-passou-mal-ao-beber-agua-envenenada.html" target="_blank">O candidato português André Ventura passou mal ao beber água envenenada?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 47 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 3</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">As análises ao sangue, assim como o eletrocardiograma e o ecocardiograma, não registaram alterações. Segundo os clínicos, registou-se apenas uma alteração da tensão arterial e um aparente espasmo esofágico, o que motivou que ficasse em observação durante a noite.”, diz a entidade onde o político foi tratado.</div>
+        <div class="error-box"><strong>Por que errou?</strong> Confiança muito baixa — modelo praticamente na fronteira de decisão.</div>
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:9%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.230</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-fake" style="width:3%"></div></div><span class="conf-cls cls-fake">FAKE</span><span class="conf-val">0.079</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:6%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.147</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:42%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">1.054</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:26%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.641</span></div>
+      </div>
+    </div>
+
+    <div class="card erro" id="item-49">
+      <div class="card-header">
+        <div class="badge-id">49</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/familia-hugo-motta-envolvida-em-fraudes-milionarias.html" target="_blank">A família de Hugo Motta é envolvida em fraudes milionárias?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 32 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 4</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">A investigação mira um contrato executado pela atual gestão, mas firmado em 31 de dezembro de 2020, um dia antes do pai do deputado assumir o comando da cidade.”, diz a entidade</div>
+        <div class="error-box"><strong>Por que errou?</strong> O boato tem estilo de redação jornalística ou cita instituições reais, fazendo o modelo classificar como TRUE. Limitação conhecida do modelo.</div>
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:26%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.644</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:6%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.144</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:13%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.319</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:29%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.733</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:37%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.921</span></div>
+      </div>
+    </div>
+
+    <div class="card erro" id="item-50">
+      <div class="card-header">
+        <div class="badge-id">50</div>
+        <div class="card-title">
+          <h3><a href="http://www.e-farsas.com/funcionarios-da-stellantis-foram-obrigados-a-ensaiar-a-recepcao-de-lula.html" target="_blank">Funcionários da Stellantis foram obrigados a ensaiar a recepção de Lula?</a></h3>
+          <div class="meta">E-farsas &nbsp;·&nbsp; 43 palavras</div>
+        </div>
+        <div class="result-badges">
+          <span class="badge fold-badge">Fold 5</span>
+          <span class="badge real-label">REAL: FAKE</span>
+          <span class="badge fake-badge">PREV: TRUE</span>
+          <span class="badge fail-badge">ERRO</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-text">O centro será responsável pelo desenvolvimento de motores a combustão de alta eficiência e por tecnologias de eletrificação de baixa e alta voltagem, para uso em carros elétricos e com motores híbridos. Os investimentos da empresa chegam a R$ 32 bilhões até 2030.</div>
+        <div class="error-box"><strong>Por que errou?</strong> O boato tem estilo de redação jornalística ou cita instituições reais, fazendo o modelo classificar como TRUE. Limitação conhecida do modelo.</div>
+        <div class="models-label">Todos os modelos</div>
+        <div class="conf-row"><span class="conf-label">&lt;strong&gt;TF-IDF caracteres [ESCOLHIDO]&lt;/strong&gt;</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:18%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.444</span></div><div class="conf-row"><span class="conf-label">TF-IDF palavras (fr2021+ext)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:6%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.140</span></div><div class="conf-row"><span class="conf-label">Palavras + caracteres</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:11%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.284</span></div><div class="conf-row"><span class="conf-label">Candidato antigo (Fake.br+FR)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:19%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.484</span></div><div class="conf-row"><span class="conf-label">Só Fake.br (antigo)</span><div class="conf-bar-bg"><div class="conf-bar-fill fill-true" style="width:26%"></div></div><span class="conf-cls cls-true">TRUE</span><span class="conf-val">0.651</span></div>
+      </div>
+    </div></div>
+
+  <div class="note">
+    <p><strong>Interpretação dos resultados.</strong>
+    Recall TRUE = 100%: o modelo não deixou passar nenhuma notícia verdadeira como FAKE — zero falsos negativos.
+    Recall FAKE = 64.0%: 9 boatos foram classificados como TRUE (falsos positivos).
+    F1 macro = 81.4% — próximo ao desempenho em fontes novas no Fake.br (~75%) e abaixo do teste
+    oficial (94,2%), o que faz sentido: os boatos do E-farsas das páginas mais antigas têm estilos variados e
+    alguns são escritos de forma mais jornalística.</p>
+    <p><strong>Atenção metodológica.</strong> Este é um teste de <em>demonstração</em>, não uma medida oficial.
+    A amostra foi coletada automaticamente mas os boatos do E-farsas (páginas 5–10) são de períodos anteriores,
+    o que pode introduzir variação. A medida válida do modelo continua sendo F1 94,2% nos testes 1+2 (coletados
+    após o treino, avaliados uma única vez). Nunca use resultados de demonstração para ajustar o modelo.</p>
+  </div>
+
+</div>
+
+<footer>modelos_finais/03.joblib &nbsp;·&nbsp; TF-IDF char_wb(2,5) + LinearSVC balanceado &nbsp;·&nbsp; Projeto de Residência em IA &nbsp;·&nbsp; 05/10/2026</footer>
+</body>
+</html>
