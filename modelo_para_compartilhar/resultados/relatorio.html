@@ -1,0 +1,603 @@
+<title>Vinagre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Literata:ital,opsz,wght@0,7..72,400..600;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: relatório de coluna única (~68ch) com figuras que podem alargar até 980px; cada seção = uma pergunta. */
+:root {
+  --papel: #f7f8f6;         /* fundo: papel frio, levemente esverdeado */
+  --folha: #ffffff;         /* superfície das figuras */
+  --tinta: #14181c;         /* texto principal */
+  --tinta-2: #4b5258;       /* texto secundário */
+  --tinta-3: #868d92;       /* rótulos de eixo */
+  --fio: #dde1de;           /* grade e divisórias */
+  --fio-forte: #b9bfbc;
+  --true: #2a78d6;          /* classe true */
+  --fake: #eb6834;          /* classe fake */
+  --destaque: #4a3aa7;      /* modelo escolhido */
+  --destaque-fundo: #ece9fb;
+  --empate: rgba(74, 58, 167, 0.09);
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --texto: "Literata", Georgia, "Times New Roman", serif;
+  --dado: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --papel: #121517; --folha: #1a1e21; --tinta: #eef1ef; --tinta-2: #b8bfbc; --tinta-3: #848b88;
+    --fio: #2a2f32; --fio-forte: #3b4245; --true: #3987e5; --fake: #d95926; --destaque: #9085e9;
+    --destaque-fundo: #262245; --empate: rgba(144, 133, 233, 0.12); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --papel: #121517; --folha: #1a1e21; --tinta: #eef1ef; --tinta-2: #b8bfbc; --tinta-3: #848b88;
+  --fio: #2a2f32; --fio-forte: #3b4245; --true: #3987e5; --fake: #d95926; --destaque: #9085e9;
+  --destaque-fundo: #262245; --empate: rgba(144, 133, 233, 0.12); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--papel); color: var(--tinta); font-family: var(--texto); font-size: 17px; line-height: 1.6;
+       padding-inline: 20px; }
+main { max-width: 980px; margin: 0 auto; padding-block: 48px 96px; display: grid; gap: 72px; }
+.col { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; font-stretch: 72%; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.6rem, 3.6vw, 2.2rem); font-weight: 700; font-stretch: 80%; }
+h3 { font-size: 1.05rem; font-weight: 650; font-stretch: 100%; }
+p { margin: 0; }
+section { display: grid; gap: 20px; }
+.rotulo { font-family: var(--display); font-size: 0.78rem; font-weight: 650; letter-spacing: 0.09em;
+          text-transform: uppercase; color: var(--tinta-2); font-stretch: 110%; }
+.etapa { font-family: var(--dado); font-size: 0.8rem; color: var(--destaque); }
+.lead { font-size: 1.2rem; color: var(--tinta-2); max-width: 60ch; }
+.nota { font-size: 0.92rem; color: var(--tinta-2); }
+strong { font-weight: 600; }
+code { font-family: var(--dado); font-size: 0.86em; background: var(--fio); padding: 1px 5px; border-radius: 3px; }
+
+/* Cabeçalho */
+header { display: grid; gap: 22px; padding-top: 16px; }
+.carimbos { display: flex; gap: 10px; flex-wrap: wrap; }
+.carimbo { font-family: var(--display); font-weight: 800; font-stretch: 125%; font-size: 0.8rem; letter-spacing: 0.14em;
+           padding: 4px 10px; border: 2px solid currentColor; border-radius: 3px; transform: rotate(-2deg); }
+.carimbo.f { color: var(--fake); } .carimbo.t { color: var(--true); transform: rotate(1.5deg); }
+
+/* Números de abertura */
+.placar { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; background: var(--fio);
+          border: 1px solid var(--fio); border-radius: 6px; overflow: hidden; }
+.placar > div { background: var(--folha); padding: 18px 20px; display: grid; gap: 4px; align-content: start; }
+.placar b { font-family: var(--display); font-size: 2.4rem; font-weight: 750; font-stretch: 85%; line-height: 1; }
+.placar span { font-size: 0.88rem; color: var(--tinta-2); line-height: 1.4; }
+.placar small { font-family: var(--dado); font-size: 0.75rem; color: var(--tinta-3); }
+
+/* Figuras */
+figure { margin: 0; background: var(--folha); border: 1px solid var(--fio); border-radius: 6px; padding: 20px 20px 16px;
+         display: grid; gap: 12px; }
+figcaption { font-size: 0.88rem; color: var(--tinta-2); max-width: 75ch; }
+figcaption b { color: var(--tinta); font-family: var(--display); font-weight: 650; }
+.grafico { overflow-x: auto; }
+.grafico svg { display: block; width: 100%; height: auto; min-width: 560px; }
+svg text { font-family: var(--dado); font-size: 11px; fill: var(--tinta-2); }
+svg .rot { font-family: var(--display); font-size: 12.5px; fill: var(--tinta); font-stretch: 90%; }
+svg .rot.esc { fill: var(--destaque); font-weight: 700; }
+svg .eixo { stroke: var(--fio-forte); stroke-width: 1; }
+svg .grade { stroke: var(--fio); stroke-width: 1; }
+svg .val { fill: var(--tinta); font-size: 11px; }
+svg [data-tip] { cursor: default; }
+.legenda { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--display); font-size: 0.85rem; color: var(--tinta-2); }
+.legenda i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.duas .grafico svg { min-width: 0; }
+.duas { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+
+/* Tabela */
+.tabela { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; min-width: 620px; }
+th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--fio); font-variant-numeric: tabular-nums; }
+th { font-family: var(--display); font-weight: 650; font-size: 0.78rem; color: var(--tinta-2); text-transform: uppercase;
+     letter-spacing: 0.05em; }
+td:first-child, th:first-child { text-align: left; }
+td { font-family: var(--dado); font-size: 0.82rem; }
+td:first-child { font-family: var(--display); font-size: 0.9rem; }
+tr.esc td { background: var(--destaque-fundo); }
+tr.esc td:first-child { color: var(--destaque); font-weight: 700; }
+
+/* Matriz de confusão */
+.matriz { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px; font-family: var(--display); max-width: 360px; }
+.matriz div { padding: 10px; text-align: center; font-size: 0.82rem; color: var(--tinta-2); }
+.matriz .c { font-family: var(--dado); font-size: 1.4rem; color: var(--tinta); border-radius: 4px; }
+.matriz .ok { background: var(--destaque-fundo); }
+.matriz .erro { background: var(--fio); }
+
+/* Exemplos */
+.exemplos { display: grid; gap: 12px; }
+.exemplo { border-left: 3px solid var(--fio-forte); padding: 4px 0 4px 16px; display: grid; gap: 6px; }
+.exemplo blockquote { margin: 0; font-style: italic; color: var(--tinta); font-size: 0.95rem; }
+.exemplo .meta { font-family: var(--dado); font-size: 0.76rem; color: var(--tinta-2); }
+.tag { font-family: var(--display); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.08em; padding: 1px 6px;
+       border-radius: 3px; border: 1.5px solid currentColor; }
+.tag.fake { color: var(--fake); } .tag.true { color: var(--true); }
+
+ul.limites { margin: 0; padding-left: 1.2em; display: grid; gap: 10px; }
+ul.limites li::marker { color: var(--tinta-3); }
+hr { border: 0; border-top: 1px solid var(--fio); margin: 0; }
+
+#tip { position: fixed; pointer-events: none; background: var(--tinta); color: var(--papel); font-family: var(--dado);
+       font-size: 12px; line-height: 1.45; padding: 7px 10px; border-radius: 4px; max-width: 300px; z-index: 10; }
+@media (max-width: 520px) { body { font-size: 16px; } main { gap: 56px; } figure { padding: 14px 12px; } }
+</style>
+
+<main>
+  <header>
+    <div class="carimbos"><span class="carimbo f">FAKE</span><span class="carimbo t">TRUE</span></div>
+    <h1>Vinagre: um classificador de notícias falsas que funcione fora do laboratório</h1>
+    <p class="lead">Residência em IA. Classificamos trechos de até 50 palavras de notícias em português como
+      <strong>true</strong> ou <strong>fake</strong>. O objetivo não foi maximizar a nota no Fake.br. Foi chegar a um modelo
+      que acerte em notícias reais de 2026, que nenhum modelo viu.</p>
+    <div class="placar" id="placar"></div>
+    <p class="nota">F1 macro = média do F1 das duas classes (não favorece a classe maior). Intervalos de 95% entre colchetes.
+      Testes avaliados <strong>uma única vez</strong>, com o modelo congelado antes.</p>
+  </header>
+
+  <section class="col">
+    <span class="rotulo">Como ler este relatório</span>
+    <h2>Quatro conjuntos de dados, quatro papéis</h2>
+    <p>Cada número aqui pertence a um protocolo, e números de protocolos diferentes não se comparam.</p>
+    <div class="tabela"><table>
+      <thead><tr><th>Conjunto</th><th>Papel</th><th>Tamanho</th></tr></thead>
+      <tbody>
+        <tr><td>Fake.br (2016–2018)</td><td>treino e referência interna</td><td>7.198</td></tr>
+        <tr><td>FakeRecogna 2.0</td><td>treino complementar</td><td>52.800</td></tr>
+        <tr><td>Corpus externo 2022–2026</td><td>treino (70%) e <strong>validação</strong> (30%): toda escolha</td><td>2.849</td></tr>
+        <tr><td>Testes externos 1 e 2</td><td><strong>só o resultado final</strong>, avaliados uma vez</td><td id="n-testes"></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">1 · O problema</span>
+      <h2>No Fake.br, o tamanho do texto já acerta 94%</h2>
+      <p>As notícias falsas do Fake.br têm em média 1.122 caracteres, e as verdadeiras, 6.675. Um classificador que olha
+        <strong>só o tamanho</strong> acerta 94,2%. A nota histórica de ~97% vinha em boa parte desse atalho. No produto, a
+        entrada é um trecho curto, então o atalho não existe.</p>
+    </div>
+    <div class="duas">
+      <figure>
+        <div class="grafico" id="g-tamanho"></div>
+        <figcaption><b>Tamanho do texto no Fake.br (caracteres).</b> Caixa = 25% a 75%, traço = mediana.
+          As distribuições quase não se sobrepõem.</figcaption>
+      </figure>
+      <figure>
+        <div class="grafico" id="g-trunc"></div>
+        <figcaption><b>Cortar todos os textos no mesmo tamanho neutraliza o atalho.</b> F1 macro na CV agrupada do Fake.br:
+          o "só tamanho" cai para ~56% (próximo do acaso), e o TF-IDF mantém 87–91%.</figcaption>
+      </figure>
+    </div>
+    <p class="col nota">Decisão: treinar com cada texto cortado em 30, 50 e 100 palavras. Treinado com o texto completo,
+      o modelo classificava quase todo trecho curto como fake (recall de true de 0,15% em 30 palavras).</p>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">2 · Dados <span class="etapa">E3 · E4</span></span>
+      <h2>O que mais ajudou foram dados no formato certo, não o modelo</h2>
+      <p>Mantivemos o mesmo modelo (TF-IDF + SVM linear) e variamos só os dados de treino. Coletamos um corpus externo de
+        2022–2026 das mesmas fontes do teste: boatos citados por Boatos.org e E-farsas, e o início de matérias do G1 e da
+        Agência Brasil. Esse corpus sozinho leva o F1 na validação de ~83 para ~88–90.</p>
+    </div>
+    <figure>
+      <div class="legenda"><span><i style="background:var(--tinta-3)"></i>sem corpus externo</span>
+        <span><i style="background:var(--true)"></i>com corpus externo</span>
+        <span><i style="background:var(--destaque)"></i>escolhido</span>
+        <span><i style="background:var(--empate);outline:1px solid var(--fio-forte)"></i>faixa de empate (2 pontos do melhor)</span></div>
+      <div class="grafico" id="g-dados"></div>
+      <figcaption><b>F1 macro na validação externa (855 itens), por combinação de dados.</b> fb = Fake.br; fr2021 =
+        FakeRecogna 2020–21; frall = FakeRecogna todos os anos; ext = corpus externo; x3/x5 = externo repetido.
+        Escolhemos <strong>fr2021 + ext</strong>: empata com o maior e é o mais simples.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">3 · Métodos <span class="etapa">E5 · E7</span></span>
+      <h2>Doze variações de TF-IDF e dois modelos de embeddings: quase tudo empata</h2>
+      <p>Com os dados fixos, variamos a representação do texto e o classificador. Todos ficam entre 89 e 92, exceto o MiniLM.
+        Os n-gramas de <strong>caracteres</strong> ficam no topo: boatos têm grafia, pontuação e erros próprios. O embedding
+        e5-small empata com eles.</p>
+    </div>
+    <figure>
+      <div class="grafico" id="g-metodos"></div>
+      <figcaption><b>F1 macro na validação externa, por método.</b> Diferenças menores que 1–2 pontos são empate
+        (testamos ~40 configurações na mesma validação). Para desempatar, usamos a robustez entre fontes (próxima seção).</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">4 · Robustez <span class="etapa">E6</span></span>
+      <h2>Em fontes que o modelo nunca viu, a nota cai ~10 pontos</h2>
+      <p>Treinamos sem uma fonte de cada classe e avaliamos só nelas. Com isso, separamos o "boato × jornalismo" da
+        assinatura de cada site. O corpus externo continua ajudando (+3 a +5), então não é só assinatura de site. Mas a queda
+        de ~90 para ~80 mostra que parte do resultado é. O TF-IDF de caracteres foi o único do topo que nunca perdeu para a base.</p>
+    </div>
+    <figure>
+      <div class="legenda" id="leg-fontes"></div>
+      <div class="grafico" id="g-fontes"></div>
+      <figcaption><b>F1 macro em fontes deixadas fora do treino.</b> O cenário da esquerda tem só 215 itens (112 E-farsas e
+        103 Agência Brasil), por isso diferenças de 3 pontos ainda são frágeis.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">5 · Uma hipótese <span class="etapa">E8</span></span>
+      <h2>Notícia verdadeira tem mais números?</h2>
+      <p>A hipótese: notícia verdadeira cita mais datas, valores e quantidades, porque trata de fatos exatos. Medimos a
+        <strong>proporção de palavras que são número</strong>. Num trecho curto, essa proporção é instável (1 número em 8 palavras
+        = 12,5%), então também testamos uma versão suavizada, que só confia no percentual quando há palavras suficientes.</p>
+    </div>
+    <div class="duas">
+      <figure>
+        <div class="legenda"><span><i style="background:var(--fake)"></i>fake</span><span><i style="background:var(--true)"></i>true</span></div>
+        <div class="grafico" id="g-num"></div>
+        <figcaption><b>% das palavras que são número, por classe (trechos de 50 palavras).</b> A hipótese se confirma nos três
+          corpora. No corpus externo, ela vale também em cada uma das quatro fontes.</figcaption>
+      </figure>
+      <figure>
+        <div class="grafico" id="g-num-modelo"></div>
+        <figcaption><b>Mas ela não acrescenta nada ao TF-IDF.</b> F1 na validação. Sozinha, a feature chega a ~69. Junto do
+          TF-IDF, o SVM deu a ela peso ~0, porque o TF-IDF já "vê" os números ("2026", "14h30", "milhões").</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="col" style="display:grid;gap:14px">
+      <span class="rotulo">6 · Resultado final</span>
+      <h2>Em notícias reais de 2026: F1 de 94, e nenhuma notícia verdadeira marcada como falsa</h2>
+      <p>Avaliamos os oito métodos <strong>uma única vez</strong>, com os modelos congelados antes, em dois testes coletados
+        automaticamente por RSS. O <strong>teste 1</strong> (39 itens) é de 30/09. O <strong>teste 2</strong> (77 itens) foi
+        coletado depois de todo o resto, com notícias da semana da eleição (28/09 a 05/10), que nenhum modelo viu.</p>
+      <p>O modelo escolhido teve o maior F1 nos dois testes juntos. Mas, com 116 itens, os intervalos de confiança se
+        sobrepõem com os outros modelos treinados no corpus externo e também com os modelos antigos. O teste <strong>confirma
+        a direção</strong> da validação, mas sozinho não prova que um método é melhor que o outro.</p>
+      <p>O padrão mais claro está nos erros. O escolhido acertou <strong>todas as 85 notícias verdadeiras</strong>, e os
+        5 erros são todos boatos que passaram como verdadeiros.</p>
+    </div>
+    <figure>
+      <div class="legenda"><span><i style="background:var(--tinta-2)"></i>F1 macro com IC 95% (bootstrap)</span>
+        <span><i style="background:var(--destaque)"></i>escolhido</span></div>
+      <div class="grafico" id="g-teste"></div>
+      <figcaption><b>F1 macro nos testes externos, por método.</b> As barras são o intervalo de 95%. Quando elas se sobrepõem,
+        não dá para declarar vencedor.</figcaption>
+    </figure>
+    <div class="duas">
+      <figure>
+        <h3>Matriz de confusão do modelo escolhido (testes 1 + 2)</h3>
+        <div class="matriz" id="matriz"></div>
+        <figcaption>Linhas = classe real; colunas = previsão.</figcaption>
+      </figure>
+      <figure>
+        <h3>Acerto por fonte do modelo escolhido</h3>
+        <div class="grafico" id="g-fonte-teste"></div>
+        <figcaption>Fontes com poucos itens (n pequeno) têm intervalo de confiança grande.</figcaption>
+      </figure>
+    </div>
+    <figure>
+      <h3>Todos os métodos, todas as métricas</h3>
+      <div class="tabela" id="tabela-teste"></div>
+    </figure>
+  </section>
+
+  <section class="col">
+    <span class="rotulo">7 · Onde erra</span>
+    <h2>Erros do modelo escolhido nos testes</h2>
+    <p>Trechos exatamente como o modelo os recebeu (até 50 palavras). Os boatos que passam são escritos como notícia
+      ("tomou posse na presidência do TSE") ou como história emocional, sem CAIXA ALTA, sem "URGENTE" e sem os outros
+      marcadores de boato de WhatsApp. É o limite esperado de um modelo que aprende estilo de redação.</p>
+    <div class="exemplos" id="erros"></div>
+  </section>
+
+  <section class="col">
+    <span class="rotulo">8 · Limites</span>
+    <h2>O que este resultado não mostra</h2>
+    <ul class="limites">
+      <li><strong>O modelo aprende estilo de redação, não veracidade.</strong> Ele separa "boato de WhatsApp citado por agência"
+        de "texto jornalístico profissional". Uma notícia falsa escrita no padrão jornalístico tende a passar.</li>
+      <li><strong>Possível atalho de época.</strong> No corpus externo, as fake de treino vão até jul/2026 e as true são de
+        ago–out/2026. O modelo pode estar usando "assunto do momento". Os testes têm a mesma estrutura, então não detectam isso.</li>
+      <li><strong>Assinatura de site.</strong> Em fontes novas a nota cai ~10 pontos (seção 4).</li>
+      <li><strong>Testes pequenos.</strong> Com 116 itens (31 fake), o intervalo do F1 ainda tem ~10 pontos. O E-farsas tem
+        um único item nos testes (o boato costuma ser imagem ou vídeo, sem texto) e todas as outras fake vêm do Boatos.org.</li>
+      <li><strong>Ruído no treino.</strong> Na conferência do teste 2 achamos 42 anúncios do G1 ("especial publicitário")
+        marcados como true no corpus externo. Eles foram removidos dos testes, mas continuam no treino e na validação.</li>
+      <li><strong>Seleção otimista.</strong> Testamos ~40 configurações na mesma validação, então a nota de validação do
+        escolhido é otimista. Por isso o teste existe.</li>
+    </ul>
+  </section>
+
+  <section class="col">
+    <span class="rotulo">Conclusão</span>
+    <h2>O que levamos daqui</h2>
+    <ul class="limites">
+      <li><strong>O principal fator foram os dados.</strong> Trocar o Fake.br de 2016 por um corpus no formato do produto
+        (boato citado × início de matéria) levou a validação de ~83 para ~90. A troca de modelo rendeu ~1 ponto.</li>
+      <li><strong>Modelo final:</strong> TF-IDF de n-gramas de caracteres (2 a 5) + SVM linear, treinado em FakeRecogna
+        2020–21 + corpus externo, com trechos de 30, 50 e 100 palavras. Escolhido na validação, por empate técnico com o
+        melhor e por ser o mais robusto em fontes novas.</li>
+      <li><strong>Desempenho estimado:</strong> F1 ~94 [89–99] em notícias das mesmas fontes na semana seguinte ao treino.
+        Em fontes que o modelo nunca viu, esperamos ~80.</li>
+      <li><strong>A hipótese dos números</strong> se confirmou como observação, mas não melhora
+        o modelo, porque o TF-IDF já captura essa informação. No corpus externo, as true têm ~2× mais números.</li>
+      <li><strong>Uso responsável:</strong> o modelo serve como triagem de "cara de boato", não como checagem de fatos.
+        Um boato escrito como notícia passa.</li>
+    </ul>
+  </section>
+</main>
+<div id="tip" hidden></div>
+
+<script>
+const D = {"historico": {"tamanho": {"fake": [696, 956, 1354, 1122], "true": [3873, 5583, 8594, 6675]}, "truncamento": [{"N": 30, "so_tamanho": 55.77, "tfidf": 87.35}, {"N": 50, "so_tamanho": 56.9, "tfidf": 89.88}, {"N": 100, "so_tamanho": 55.45, "tfidf": 90.94}], "baseline_tamanho_texto_completo": 94.17, "treino_completo_recall_true_30": 0.15}, "numeros": [{"corpus": "Fake.br", "fake": 2.13, "true": 3.12, "auc": 0.605}, {"corpus": "FakeRecogna 2020–21", "fake": 3.4, "true": 3.79, "auc": 0.564}, {"corpus": "Corpus externo", "fake": 2.41, "true": 5.21, "auc": 0.758}], "e3": [{"experimento": "modelo_final (só Fake.br)", "f1_macro": 79.92748330550918, "bal_acc": 78.80123168400934, "recall_fake": 66.4259927797834, "recall_true": 91.17647058823528, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 70.78189300411523, "E-farsas": 35.294117647058826, "G1": 90.6764168190128}}, {"experimento": "modelo_candidato (Fake.br + FR 2020-21)", "f1_macro": 82.94328142338816, "bal_acc": 83.00532147452313, "recall_fake": 77.25631768953069, "recall_true": 88.75432525951558, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 81.06995884773663, "E-farsas": 50.0, "G1": 88.29981718464352}}], "e4": [{"experimento": "fb", "f1_macro": 79.92748330550918, "bal_acc": 78.80123168400934, "recall_fake": 66.4259927797834, "recall_true": 91.17647058823528, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 70.78189300411523, "E-farsas": 35.294117647058826, "G1": 90.6764168190128}}, {"experimento": "fb + fr2021", "f1_macro": 82.1768593189964, "bal_acc": 82.29828988295253, "recall_fake": 76.53429602888086, "recall_true": 88.06228373702422, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 80.65843621399176, "E-farsas": 47.05882352941176, "G1": 87.56855575868373}}, {"experimento": "fb + frall", "f1_macro": 70.21416333523702, "bal_acc": 73.3467202978027, "recall_fake": 78.70036101083032, "recall_true": 67.99307958477509, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 83.9506172839506, "E-farsas": 41.17647058823529, "G1": 66.36197440585009}}, {"experimento": "fr2021", "f1_macro": 75.10683963885934, "bal_acc": 77.33345408666759, "recall_fake": 79.06137184115524, "recall_true": 75.60553633217994, "fontes": {"Agência Brasil": 90.32258064516128, "Boatos.org": 81.89300411522635, "E-farsas": 58.82352941176471, "G1": 74.77148080438756}}, {"experimento": "frall", "f1_macro": 69.22821873087126, "bal_acc": 72.76366906924163, "recall_fake": 79.78339350180505, "recall_true": 65.7439446366782, "fontes": {"Agência Brasil": 93.5483870967742, "Boatos.org": 82.3045267489712, "E-farsas": 61.76470588235294, "G1": 64.16819012797075}}, {"experimento": "ext", "f1_macro": 88.34287717658059, "bal_acc": 86.99955029792761, "recall_fake": 77.9783393501805, "recall_true": 96.02076124567472, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 81.89300411522635, "E-farsas": 50.0, "G1": 95.79524680073126}}, {"experimento": "fb + ext", "f1_macro": 87.63537392858593, "bal_acc": 86.28502367181743, "recall_fake": 76.89530685920577, "recall_true": 95.67474048442908, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 82.3045267489712, "E-farsas": 38.23529411764706, "G1": 95.42961608775136}}, {"experimento": "fr2021 + ext", "f1_macro": 90.46950240770468, "bal_acc": 89.71462655990406, "recall_fake": 83.75451263537906, "recall_true": 95.67474048442908, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 87.24279835390946, "E-farsas": 58.82352941176471, "G1": 95.61243144424132}}, {"experimento": "frall + ext", "f1_macro": 89.59013580971144, "bal_acc": 89.10909022772412, "recall_fake": 83.75451263537906, "recall_true": 94.4636678200692, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 86.83127572016461, "E-farsas": 61.76470588235294, "G1": 94.3327239488117}}, {"experimento": "fb + fr2021 + ext", "f1_macro": 89.73587792857612, "bal_acc": 88.81209948409179, "recall_fake": 81.94945848375451, "recall_true": 95.67474048442908, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 86.41975308641975, "E-farsas": 50.0, "G1": 95.42961608775136}}, {"experimento": "fb + frall + ext", "f1_macro": 89.0856172689789, "bal_acc": 88.28557330768366, "recall_fake": 81.58844765342961, "recall_true": 94.98269896193771, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 87.24279835390946, "E-farsas": 41.17647058823529, "G1": 94.88117001828154}}, {"experimento": "fb + fr2021 + ext (ext x3)", "f1_macro": 89.8621365943701, "bal_acc": 88.8986046744032, "recall_fake": 81.94945848375451, "recall_true": 95.8477508650519, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 86.41975308641975, "E-farsas": 50.0, "G1": 95.79524680073126}}, {"experimento": "fb + fr2021 + ext (ext x5)", "f1_macro": 88.9147481628622, "bal_acc": 88.01106766767018, "recall_fake": 80.86642599277978, "recall_true": 95.15570934256056, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 85.18518518518519, "E-farsas": 50.0, "G1": 95.06398537477148}}, {"experimento": "fb + frall + ext (ext x3)", "f1_macro": 89.92490254528778, "bal_acc": 89.1806053489563, "recall_fake": 83.03249097472924, "recall_true": 95.32871972318338, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 86.83127572016461, "E-farsas": 55.88235294117647, "G1": 95.24680073126144}}, {"experimento": "fb + frall + ext (ext x5)", "f1_macro": 89.35847683725443, "bal_acc": 88.55258391315753, "recall_fake": 81.94945848375451, "recall_true": 95.15570934256056, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 86.83127572016461, "E-farsas": 47.05882352941176, "G1": 95.06398537477148}}, {"experimento": "frall + ext (ext x3)", "f1_macro": 90.69011063926486, "bal_acc": 90.27113287447068, "recall_fake": 85.5595667870036, "recall_true": 94.98269896193771, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 87.24279835390946, "E-farsas": 73.52941176470588, "G1": 94.88117001828154}}, {"experimento": "frall + ext (ext x5)", "f1_macro": 90.09130006143822, "bal_acc": 89.4551109889698, "recall_fake": 83.75451263537906, "recall_true": 95.15570934256056, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 86.41975308641975, "E-farsas": 64.70588235294117, "G1": 95.06398537477148}}], "e5": [{"experimento": "word(1,2) C=1 [base]", "f1_macro": 90.46950240770468, "bal_acc": 89.71462655990406, "recall_fake": 83.75451263537906, "recall_true": 95.67474048442908, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 87.24279835390946, "E-farsas": 58.82352941176471, "G1": 95.61243144424132}}, {"experimento": "word(1,2) C=0.1", "f1_macro": 90.31380990143876, "bal_acc": 90.01161730353641, "recall_fake": 85.5595667870036, "recall_true": 94.4636678200692, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 88.88888888888889, "E-farsas": 61.76470588235294, "G1": 94.3327239488117}}, {"experimento": "word(1,2) C=0.3", "f1_macro": 90.52706552706552, "bal_acc": 89.99662723445716, "recall_fake": 84.83754512635379, "recall_true": 95.15570934256056, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 88.06584362139918, "E-farsas": 61.76470588235294, "G1": 95.06398537477148}}, {"experimento": "word(1,2) C=3", "f1_macro": 89.60984969619443, "bal_acc": 88.72559429378038, "recall_fake": 81.94945848375451, "recall_true": 95.50173010380622, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 86.0082304526749, "E-farsas": 52.94117647058824, "G1": 95.42961608775136}}, {"experimento": "word(1,2) sublinear", "f1_macro": 89.75719152973649, "bal_acc": 88.90609970894283, "recall_fake": 82.31046931407943, "recall_true": 95.50173010380622, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 86.0082304526749, "E-farsas": 55.88235294117647, "G1": 95.24680073126144}}, {"experimento": "word(1,2) sem max_features, min_df=2", "f1_macro": 89.88327470418932, "bal_acc": 88.99260489925425, "recall_fake": 82.31046931407943, "recall_true": 95.67474048442908, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 86.0082304526749, "E-farsas": 55.88235294117647, "G1": 95.61243144424132}}, {"experimento": "word(1,2) mantém maiúsculas", "f1_macro": 89.75719152973649, "bal_acc": 88.90609970894283, "recall_fake": 82.31046931407943, "recall_true": 95.50173010380622, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 86.41975308641975, "E-farsas": 52.94117647058824, "G1": 95.24680073126144}}, {"experimento": "word(1,1)", "f1_macro": 89.44444444444444, "bal_acc": 88.92858481256167, "recall_fake": 83.39350180505414, "recall_true": 94.4636678200692, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 86.41975308641975, "E-farsas": 61.76470588235294, "G1": 94.3327239488117}}, {"experimento": "char_wb(2,5)", "f1_macro": 91.4312984688805, "bal_acc": 90.69616379148812, "recall_fake": 85.1985559566787, "recall_true": 96.19377162629758, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 88.47736625514403, "E-farsas": 61.76470588235294, "G1": 95.97806215722122}}, {"experimento": "word(1,2) + char_wb(2,5)", "f1_macro": 91.28640220132998, "bal_acc": 90.51565837632567, "recall_fake": 84.83754512635379, "recall_true": 96.19377162629758, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 87.65432098765432, "E-farsas": 64.70588235294117, "G1": 95.97806215722122}}, {"experimento": "word(1,2) + char_wb(2,5) sem lowercase", "f1_macro": 92.24736528136806, "bal_acc": 91.49719560790976, "recall_fake": 86.28158844765343, "recall_true": 96.7128027681661, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 90.12345679012346, "E-farsas": 58.82352941176471, "G1": 96.52650822669104}}, {"experimento": "LogReg word(1,2) C=10", "f1_macro": 90.07118711473454, "bal_acc": 89.36111076411876, "recall_fake": 83.39350180505414, "recall_true": 95.32871972318338, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 86.83127572016461, "E-farsas": 58.82352941176471, "G1": 95.24680073126144}}], "e6": [{"experimento": "fr2021 | sem E-farsas/Agência Brasil no treino", "f1_macro": 76.8710619333026, "bal_acc": 77.85194174757282, "recall_fake": 62.5, "recall_true": 93.20388349514565, "fontes": {"Agência Brasil": 93.20388349514565, "E-farsas": 62.5}}, {"experimento": "fr2021+ext | sem E-farsas/Agência Brasil no treino", "f1_macro": 80.05037115588547, "bal_acc": 81.21099167822469, "recall_fake": 63.39285714285714, "recall_true": 99.02912621359224, "fontes": {"Agência Brasil": 99.02912621359224, "E-farsas": 63.39285714285714}}, {"experimento": "fr2021+ext char_wb(2,5) | sem E-farsas/Agência Brasil no treino", "f1_macro": 80.19736842105263, "bal_acc": 81.09396671289875, "recall_fake": 66.07142857142857, "recall_true": 96.11650485436894, "fontes": {"Agência Brasil": 96.11650485436894, "E-farsas": 66.07142857142857}}, {"experimento": "fr2021+ext word(1,2) + char_wb(2,5) sem lowercase | sem E-farsas/Agência Brasil no treino", "f1_macro": 76.55189298671236, "bal_acc": 78.04698335644937, "recall_fake": 58.03571428571429, "recall_true": 98.05825242718448, "fontes": {"Agência Brasil": 98.05825242718448, "E-farsas": 58.03571428571429}}, {"experimento": "fr2021 | sem Boatos.org/G1 no treino", "f1_macro": 75.6023789825717, "bal_acc": 77.9379873294347, "recall_fake": 78.51851851851852, "recall_true": 77.35745614035088, "fontes": {"Boatos.org": 78.51851851851852, "G1": 77.35745614035088}}, {"experimento": "fr2021+ext | sem Boatos.org/G1 no treino", "f1_macro": 80.43396669012432, "bal_acc": 81.73489278752437, "recall_fake": 79.25925925925927, "recall_true": 84.21052631578947, "fontes": {"Boatos.org": 79.25925925925927, "G1": 84.21052631578947}}, {"experimento": "fr2021+ext char_wb(2,5) | sem Boatos.org/G1 no treino", "f1_macro": 82.98558959513672, "bal_acc": 83.64014782326186, "recall_fake": 79.50617283950618, "recall_true": 87.77412280701753, "fontes": {"Boatos.org": 79.50617283950618, "G1": 87.77412280701753}}, {"experimento": "fr2021+ext word(1,2) + char_wb(2,5) sem lowercase | sem Boatos.org/G1 no treino", "f1_macro": 81.81558297599253, "bal_acc": 83.38084795321637, "recall_fake": 82.22222222222221, "recall_true": 84.53947368421053, "fontes": {"Boatos.org": 82.22222222222221, "G1": 84.53947368421053}}], "e7": [{"experimento": "emb multilingual-e5-small + LogReg C=0.3", "f1_macro": 89.2846662672552, "bal_acc": 90.18056787378362, "recall_fake": 89.53068592057761, "recall_true": 90.83044982698962, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 93.4156378600823, "E-farsas": 61.76470588235294, "G1": 90.31078610603292}}, {"experimento": "emb multilingual-e5-small + LogReg C=1", "f1_macro": 89.74885592342822, "bal_acc": 89.86109202653243, "recall_fake": 86.64259927797833, "recall_true": 93.07958477508652, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 90.12345679012346, "E-farsas": 61.76470588235294, "G1": 92.6873857404022}}, {"experimento": "emb multilingual-e5-small + LogReg C=3", "f1_macro": 90.45760428570756, "bal_acc": 90.19212271869888, "recall_fake": 85.92057761732852, "recall_true": 94.4636678200692, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 89.30041152263375, "E-farsas": 61.76470588235294, "G1": 94.14990859232176}}, {"experimento": "emb multilingual-e5-small + LogReg C=10", "f1_macro": 91.76951810137908, "bal_acc": 91.33917529636616, "recall_fake": 87.00361010830325, "recall_true": 95.67474048442908, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 90.53497942386832, "E-farsas": 61.76470588235294, "G1": 95.42961608775136}}, {"experimento": "emb paraphrase-multilingual-MiniLM-L12-v2 + LogReg C=0.3", "f1_macro": 83.79290299752313, "bal_acc": 83.41536232246136, "recall_fake": 76.17328519855594, "recall_true": 90.65743944636678, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 81.06995884773663, "E-farsas": 41.17647058823529, "G1": 90.31078610603292}}, {"experimento": "emb paraphrase-multilingual-MiniLM-L12-v2 + LogReg C=1", "f1_macro": 85.81429475790148, "bal_acc": 84.79195033290445, "recall_fake": 75.81227436823104, "recall_true": 93.77162629757784, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 80.24691358024691, "E-farsas": 44.11764705882353, "G1": 93.41864716636198}}, {"experimento": "emb paraphrase-multilingual-MiniLM-L12-v2 + LogReg C=3", "f1_macro": 86.11934900542495, "bal_acc": 85.15296116322936, "recall_fake": 76.53429602888086, "recall_true": 93.77162629757784, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 81.06995884773663, "E-farsas": 44.11764705882353, "G1": 93.41864716636198}}, {"experimento": "emb paraphrase-multilingual-MiniLM-L12-v2 + LogReg C=10", "f1_macro": 87.01195862960569, "bal_acc": 85.85249772026033, "recall_fake": 76.89530685920577, "recall_true": 94.80968858131487, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 81.89300411522635, "E-farsas": 41.17647058823529, "G1": 94.51553930530164}}], "e8": [{"experimento": "só tamanho (controle)", "f1_macro": 49.66117080791235, "bal_acc": 54.69314079422383, "recall_fake": 9.386281588447654, "recall_true": 100.0, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 6.172839506172839, "E-farsas": 32.35294117647059, "G1": 100.0}}, {"experimento": "só números: contagem", "f1_macro": 69.15553134430856, "bal_acc": 71.41019074862905, "recall_fake": 72.92418772563177, "recall_true": 69.8961937716263, "fontes": {"Agência Brasil": 54.83870967741935, "Boatos.org": 71.60493827160494, "E-farsas": 82.35294117647058, "G1": 70.74954296160878}}, {"experimento": "só números: pct", "f1_macro": 68.8711635618334, "bal_acc": 71.04917991830413, "recall_fake": 72.20216606498195, "recall_true": 69.8961937716263, "fontes": {"Agência Brasil": 54.83870967741935, "Boatos.org": 71.19341563786008, "E-farsas": 79.41176470588235, "G1": 70.74954296160878}}, {"experimento": "só números: pct_suave", "f1_macro": 68.8711635618334, "bal_acc": 71.04917991830413, "recall_fake": 72.20216606498195, "recall_true": 69.8961937716263, "fontes": {"Agência Brasil": 54.83870967741935, "Boatos.org": 71.19341563786008, "E-farsas": 79.41176470588235, "G1": 70.74954296160878}}, {"experimento": "só números: categorias", "f1_macro": 69.45101872813336, "bal_acc": 72.45168825653006, "recall_fake": 77.25631768953069, "recall_true": 67.64705882352942, "fontes": {"Agência Brasil": 48.38709677419355, "Boatos.org": 76.95473251028807, "E-farsas": 79.41176470588235, "G1": 68.73857404021938}}, {"experimento": "TF-IDF [base]", "f1_macro": 90.46950240770468, "bal_acc": 89.71462655990406, "recall_fake": 83.75451263537906, "recall_true": 95.67474048442908, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 87.24279835390946, "E-farsas": 58.82352941176471, "G1": 95.61243144424132}}, {"experimento": "TF-IDF + pct_suave (peso 1)", "f1_macro": 90.46950240770468, "bal_acc": 89.71462655990406, "recall_fake": 83.75451263537906, "recall_true": 95.67474048442908, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 87.24279835390946, "E-farsas": 58.82352941176471, "G1": 95.61243144424132}}, {"experimento": "TF-IDF + categorias (peso 0.3)", "f1_macro": 90.48888860637187, "bal_acc": 89.80862678475509, "recall_fake": 84.11552346570397, "recall_true": 95.50173010380622, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 87.24279835390946, "E-farsas": 61.76470588235294, "G1": 95.42961608775136}}, {"experimento": "TF-IDF + categorias (peso 1)", "f1_macro": 90.48888860637187, "bal_acc": 89.80862678475509, "recall_fake": 84.11552346570397, "recall_true": 95.50173010380622, "fontes": {"Agência Brasil": 96.7741935483871, "Boatos.org": 87.24279835390946, "E-farsas": 61.76470588235294, "G1": 95.42961608775136}}, {"experimento": "TF-IDF dígitos mascarados", "f1_macro": 90.70354972817395, "bal_acc": 89.79363671567586, "recall_fake": 83.39350180505414, "recall_true": 96.19377162629758, "fontes": {"Agência Brasil": 100.0, "Boatos.org": 85.59670781893004, "E-farsas": 67.64705882352942, "G1": 95.97806215722122}}], "teste": [{"metodo": "Fake.br (modelo_final salvo)", "teste": "Teste 1 (30/09)", "n": 39, "accuracy": 94.87179487179486, "acc_ic_baixo": 83.11406095436207, "acc_ic_alto": 98.58223423536003, "f1_macro": 94.23076923076924, "f1_ic_baixo": 84.2741935483871, "f1_ic_alto": 100.0, "bal_acc": 92.85714285714286, "recall_fake": 85.71428571428571, "recall_true": 100.0, "fake_como_fake": 12, "fake_como_true": 2, "true_como_fake": 0, "true_como_true": 25, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 10, "acerto_Boatos.org": 84.61538461538461, "n_Boatos.org": 13, "acerto_E-farsas": 100.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 15}, {"metodo": "Fake.br (modelo_final salvo)", "teste": "Teste 2 (02–05/10)", "n": 77, "accuracy": 89.6103896103896, "acc_ic_baixo": 80.8154290637188, "acc_ic_alto": 94.64077170420268, "f1_macro": 84.90196078431373, "f1_ic_baixo": 73.80952380952381, "f1_ic_alto": 93.63636363636364, "bal_acc": 84.90196078431373, "recall_fake": 76.47058823529412, "recall_true": 93.33333333333331, "fake_como_fake": 13, "fake_como_true": 4, "true_como_fake": 4, "true_como_true": 56, "acerto_Agência Brasil": 92.3076923076923, "n_Agência Brasil": 39, "acerto_Boatos.org": 76.47058823529412, "n_Boatos.org": 17, "acerto_E-farsas": null, "n_E-farsas": null, "acerto_G1": 95.23809523809524, "n_G1": 21}, {"metodo": "Fake.br (modelo_final salvo)", "teste": "Testes 1 + 2", "n": 116, "accuracy": 91.3793103448276, "acc_ic_baixo": 84.85562378006445, "acc_ic_alto": 95.2501157961762, "f1_macro": 88.75968992248062, "f1_ic_baixo": 81.15047123821904, "f1_ic_alto": 95.04273504273505, "bal_acc": 87.9696394686907, "recall_fake": 80.64516129032258, "recall_true": 95.2941176470588, "fake_como_fake": 25, "fake_como_true": 6, "true_como_fake": 4, "true_como_true": 81, "acerto_Agência Brasil": 93.87755102040816, "n_Agência Brasil": 49, "acerto_Boatos.org": 80.0, "n_Boatos.org": 30, "acerto_E-farsas": 100.0, "n_E-farsas": 1.0, "acerto_G1": 97.2222222222222, "n_G1": 36}, {"metodo": "Fake.br + FakeRecogna (candidato salvo)", "teste": "Teste 1 (30/09)", "n": 39, "accuracy": 89.74358974358975, "acc_ic_baixo": 76.42084129775517, "acc_ic_alto": 95.938734441713, "f1_macro": 88.46153846153845, "f1_ic_baixo": 74.67532467532467, "f1_ic_alto": 97.3232669869595, "bal_acc": 87.28571428571428, "recall_fake": 78.57142857142857, "recall_true": 96.0, "fake_como_fake": 11, "fake_como_true": 3, "true_como_fake": 1, "true_como_true": 24, "acerto_Agência Brasil": 90.0, "n_Agência Brasil": 10, "acerto_Boatos.org": 76.92307692307693, "n_Boatos.org": 13, "acerto_E-farsas": 100.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 15}, {"metodo": "Fake.br + FakeRecogna (candidato salvo)", "teste": "Teste 2 (02–05/10)", "n": 77, "accuracy": 92.2077922077922, "acc_ic_baixo": 84.02419455014049, "acc_ic_alto": 96.37995380912008, "f1_macro": 87.58064516129032, "f1_ic_baixo": 76.86298076923077, "f1_ic_alto": 95.64055299539169, "bal_acc": 84.46078431372548, "recall_fake": 70.58823529411765, "recall_true": 98.33333333333331, "fake_como_fake": 12, "fake_como_true": 5, "true_como_fake": 1, "true_como_true": 59, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 39, "acerto_Boatos.org": 70.58823529411765, "n_Boatos.org": 17, "acerto_E-farsas": null, "n_E-farsas": null, "acerto_G1": 95.23809523809524, "n_G1": 21}, {"metodo": "Fake.br + FakeRecogna (candidato salvo)", "teste": "Testes 1 + 2", "n": 116, "accuracy": 91.3793103448276, "acc_ic_baixo": 84.85562378006445, "acc_ic_alto": 95.2501157961762, "f1_macro": 88.23051948051948, "f1_ic_baixo": 80.18928299193955, "f1_ic_alto": 94.3907156673114, "bal_acc": 85.92030360531308, "recall_fake": 74.19354838709677, "recall_true": 97.6470588235294, "fake_como_fake": 23, "fake_como_true": 8, "true_como_fake": 2, "true_como_true": 83, "acerto_Agência Brasil": 97.95918367346938, "n_Agência Brasil": 49, "acerto_Boatos.org": 73.33333333333333, "n_Boatos.org": 30, "acerto_E-farsas": 100.0, "n_E-farsas": 1.0, "acerto_G1": 97.2222222222222, "n_G1": 36}, {"metodo": "TF-IDF palavras [base]", "teste": "Teste 1 (30/09)", "n": 39, "accuracy": 89.74358974358975, "acc_ic_baixo": 76.42084129775517, "acc_ic_alto": 95.938734441713, "f1_macro": 87.96296296296296, "f1_ic_baixo": 74.67532467532467, "f1_ic_alto": 97.1677559912854, "bal_acc": 85.71428571428572, "recall_fake": 71.42857142857143, "recall_true": 100.0, "fake_como_fake": 10, "fake_como_true": 4, "true_como_fake": 0, "true_como_true": 25, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 10, "acerto_Boatos.org": 76.92307692307693, "n_Boatos.org": 13, "acerto_E-farsas": 0.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 15}, {"metodo": "TF-IDF palavras [base]", "teste": "Teste 2 (02–05/10)", "n": 77, "accuracy": 96.1038961038961, "acc_ic_baixo": 89.15984057462077, "acc_ic_alto": 98.66622917164848, "f1_macro": 93.94177812745868, "f1_ic_baixo": 85.19230769230771, "f1_ic_alto": 100.0, "bal_acc": 91.17647058823528, "recall_fake": 82.35294117647058, "recall_true": 100.0, "fake_como_fake": 14, "fake_como_true": 3, "true_como_fake": 0, "true_como_true": 60, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 39, "acerto_Boatos.org": 82.35294117647058, "n_Boatos.org": 17, "acerto_E-farsas": null, "n_E-farsas": null, "acerto_G1": 100.0, "n_G1": 21}, {"metodo": "TF-IDF palavras [base]", "teste": "Testes 1 + 2", "n": 116, "accuracy": 93.96551724137932, "acc_ic_baixo": 88.0658660391947, "acc_ic_alto": 97.046482260561, "f1_macro": 91.65896250642014, "f1_ic_baixo": 84.88220551378446, "f1_ic_alto": 96.95623491856938, "bal_acc": 88.70967741935483, "recall_fake": 77.41935483870968, "recall_true": 100.0, "fake_como_fake": 24, "fake_como_true": 7, "true_como_fake": 0, "true_como_true": 85, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 49, "acerto_Boatos.org": 80.0, "n_Boatos.org": 30, "acerto_E-farsas": 0.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 36}, {"metodo": "TF-IDF caracteres [ESCOLHIDO]", "teste": "Teste 1 (30/09)", "n": 39, "accuracy": 89.74358974358975, "acc_ic_baixo": 76.42084129775517, "acc_ic_alto": 95.938734441713, "f1_macro": 87.96296296296296, "f1_ic_baixo": 74.67532467532467, "f1_ic_alto": 97.2554539057002, "bal_acc": 85.71428571428572, "recall_fake": 71.42857142857143, "recall_true": 100.0, "fake_como_fake": 10, "fake_como_true": 4, "true_como_fake": 0, "true_como_true": 25, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 10, "acerto_Boatos.org": 76.92307692307693, "n_Boatos.org": 13, "acerto_E-farsas": 0.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 15}, {"metodo": "TF-IDF caracteres [ESCOLHIDO]", "teste": "Teste 2 (02–05/10)", "n": 77, "accuracy": 98.7012987012987, "acc_ic_baixo": 93.00363315482386, "acc_ic_alto": 99.77038418278453, "f1_macro": 98.07162534435264, "f1_ic_baixo": 93.24561403508773, "f1_ic_alto": 100.0, "bal_acc": 97.05882352941175, "recall_fake": 94.11764705882352, "recall_true": 100.0, "fake_como_fake": 16, "fake_como_true": 1, "true_como_fake": 0, "true_como_true": 60, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 39, "acerto_Boatos.org": 94.11764705882352, "n_Boatos.org": 17, "acerto_E-farsas": null, "n_E-farsas": null, "acerto_G1": 100.0, "n_G1": 21}, {"metodo": "TF-IDF caracteres [ESCOLHIDO]", "teste": "Testes 1 + 2", "n": 116, "accuracy": 95.6896551724138, "acc_ic_baixo": 90.3050167296632, "acc_ic_alto": 98.14507071910248, "f1_macro": 94.18546365914786, "f1_ic_baixo": 88.69028274293143, "f1_ic_alto": 98.70636779301884, "bal_acc": 91.93548387096774, "recall_fake": 83.87096774193549, "recall_true": 100.0, "fake_como_fake": 26, "fake_como_true": 5, "true_como_fake": 0, "true_como_true": 85, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 49, "acerto_Boatos.org": 86.66666666666667, "n_Boatos.org": 30, "acerto_E-farsas": 0.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 36}, {"metodo": "TF-IDF palavras + caracteres (sem lowercase)", "teste": "Teste 1 (30/09)", "n": 39, "accuracy": 87.17948717948718, "acc_ic_baixo": 73.29395096236952, "acc_ic_alto": 94.39726505197169, "f1_macro": 84.58498023715416, "f1_ic_baixo": 70.67669172932331, "f1_ic_alto": 95.87301587301586, "bal_acc": 82.14285714285714, "recall_fake": 64.28571428571429, "recall_true": 100.0, "fake_como_fake": 9, "fake_como_true": 5, "true_como_fake": 0, "true_como_true": 25, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 10, "acerto_Boatos.org": 69.23076923076923, "n_Boatos.org": 13, "acerto_E-farsas": 0.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 15}, {"metodo": "TF-IDF palavras + caracteres (sem lowercase)", "teste": "Teste 2 (02–05/10)", "n": 77, "accuracy": 97.4025974025974, "acc_ic_baixo": 91.01524452675264, "acc_ic_alto": 99.28479901518617, "f1_macro": 96.05532786885246, "f1_ic_baixo": 89.37746647509577, "f1_ic_alto": 100.0, "bal_acc": 94.11764705882352, "recall_fake": 88.23529411764706, "recall_true": 100.0, "fake_como_fake": 15, "fake_como_true": 2, "true_como_fake": 0, "true_como_true": 60, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 39, "acerto_Boatos.org": 88.23529411764706, "n_Boatos.org": 17, "acerto_E-farsas": null, "n_E-farsas": null, "acerto_G1": 100.0, "n_G1": 21}, {"metodo": "TF-IDF palavras + caracteres (sem lowercase)", "teste": "Testes 1 + 2", "n": 116, "accuracy": 93.96551724137932, "acc_ic_baixo": 88.0658660391947, "acc_ic_alto": 97.046482260561, "f1_macro": 91.65896250642014, "f1_ic_baixo": 84.89583333333333, "f1_ic_alto": 96.79555407502497, "bal_acc": 88.70967741935483, "recall_fake": 77.41935483870968, "recall_true": 100.0, "fake_como_fake": 24, "fake_como_true": 7, "true_como_fake": 0, "true_como_true": 85, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 49, "acerto_Boatos.org": 80.0, "n_Boatos.org": 30, "acerto_E-farsas": 0.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 36}, {"metodo": "Embeddings e5-small + LogReg", "teste": "Teste 1 (30/09)", "n": 39, "accuracy": 89.74358974358975, "acc_ic_baixo": 76.42084129775517, "acc_ic_alto": 95.938734441713, "f1_macro": 87.96296296296296, "f1_ic_baixo": 74.67532467532467, "f1_ic_alto": 97.3232669869595, "bal_acc": 85.71428571428572, "recall_fake": 71.42857142857143, "recall_true": 100.0, "fake_como_fake": 10, "fake_como_true": 4, "true_como_fake": 0, "true_como_true": 25, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 10, "acerto_Boatos.org": 69.23076923076923, "n_Boatos.org": 13, "acerto_E-farsas": 100.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 15}, {"metodo": "Embeddings e5-small + LogReg", "teste": "Teste 2 (02–05/10)", "n": 77, "accuracy": 96.1038961038961, "acc_ic_baixo": 89.15984057462077, "acc_ic_alto": 98.66622917164848, "f1_macro": 94.21487603305783, "f1_ic_baixo": 86.50112367696099, "f1_ic_alto": 100.0, "bal_acc": 93.2843137254902, "recall_fake": 88.23529411764706, "recall_true": 98.33333333333331, "fake_como_fake": 15, "fake_como_true": 2, "true_como_fake": 1, "true_como_true": 59, "acerto_Agência Brasil": 97.43589743589745, "n_Agência Brasil": 39, "acerto_Boatos.org": 88.23529411764706, "n_Boatos.org": 17, "acerto_E-farsas": null, "n_E-farsas": null, "acerto_G1": 100.0, "n_G1": 21}, {"metodo": "Embeddings e5-small + LogReg", "teste": "Testes 1 + 2", "n": 116, "accuracy": 93.96551724137932, "acc_ic_baixo": 88.0658660391947, "acc_ic_alto": 97.046482260561, "f1_macro": 91.859649122807, "f1_ic_baixo": 85.4347724124503, "f1_ic_alto": 96.98200579573933, "bal_acc": 89.73434535104364, "recall_fake": 80.64516129032258, "recall_true": 98.82352941176472, "fake_como_fake": 25, "fake_como_true": 6, "true_como_fake": 1, "true_como_true": 84, "acerto_Agência Brasil": 97.95918367346938, "n_Agência Brasil": 49, "acerto_Boatos.org": 80.0, "n_Boatos.org": 30, "acerto_E-farsas": 100.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 36}, {"metodo": "Só números (E8)", "teste": "Teste 1 (30/09)", "n": 39, "accuracy": 61.53846153846154, "acc_ic_baixo": 45.89878131007848, "acc_ic_alto": 75.10883745299294, "f1_macro": 61.43704680290046, "f1_ic_baixo": 45.58139534883721, "f1_ic_alto": 76.86222808174028, "bal_acc": 65.28571428571428, "recall_fake": 78.57142857142857, "recall_true": 52.0, "fake_como_fake": 11, "fake_como_true": 3, "true_como_fake": 12, "true_como_true": 13, "acerto_Agência Brasil": 40.0, "n_Agência Brasil": 10, "acerto_Boatos.org": 76.92307692307693, "n_Boatos.org": 13, "acerto_E-farsas": 100.0, "n_E-farsas": 1.0, "acerto_G1": 60.0, "n_G1": 15}, {"metodo": "Só números (E8)", "teste": "Teste 2 (02–05/10)", "n": 77, "accuracy": 72.72727272727273, "acc_ic_baixo": 61.878896964336086, "acc_ic_alto": 81.41564445988116, "f1_macro": 69.79263964132262, "f1_ic_baixo": 58.28507379039791, "f1_ic_alto": 79.39837010241872, "bal_acc": 80.3921568627451, "recall_fake": 94.11764705882352, "recall_true": 66.66666666666666, "fake_como_fake": 16, "fake_como_true": 1, "true_como_fake": 20, "true_como_true": 40, "acerto_Agência Brasil": 64.1025641025641, "n_Agência Brasil": 39, "acerto_Boatos.org": 94.11764705882352, "n_Boatos.org": 17, "acerto_E-farsas": null, "n_E-farsas": null, "acerto_G1": 71.42857142857143, "n_G1": 21}, {"metodo": "Só números (E8)", "teste": "Testes 1 + 2", "n": 116, "accuracy": 68.96551724137932, "acc_ic_baixo": 60.05222969408555, "acc_ic_alto": 76.66290094502475, "f1_macro": 67.32394366197182, "f1_ic_baixo": 58.109873223204, "f1_ic_alto": 75.7401929579349, "bal_acc": 74.7248576850095, "recall_fake": 87.09677419354838, "recall_true": 62.35294117647059, "fake_como_fake": 27, "fake_como_true": 4, "true_como_fake": 32, "true_como_true": 53, "acerto_Agência Brasil": 59.18367346938776, "n_Agência Brasil": 49, "acerto_Boatos.org": 86.66666666666667, "n_Boatos.org": 30, "acerto_E-farsas": 100.0, "n_E-farsas": 1.0, "acerto_G1": 66.66666666666666, "n_G1": 36}, {"metodo": "TF-IDF palavras + números (E8)", "teste": "Teste 1 (30/09)", "n": 39, "accuracy": 89.74358974358975, "acc_ic_baixo": 76.42084129775517, "acc_ic_alto": 95.938734441713, "f1_macro": 87.96296296296296, "f1_ic_baixo": 74.67532467532467, "f1_ic_alto": 97.1677559912854, "bal_acc": 85.71428571428572, "recall_fake": 71.42857142857143, "recall_true": 100.0, "fake_como_fake": 10, "fake_como_true": 4, "true_como_fake": 0, "true_como_true": 25, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 10, "acerto_Boatos.org": 76.92307692307693, "n_Boatos.org": 13, "acerto_E-farsas": 0.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 15}, {"metodo": "TF-IDF palavras + números (E8)", "teste": "Teste 2 (02–05/10)", "n": 77, "accuracy": 96.1038961038961, "acc_ic_baixo": 89.15984057462077, "acc_ic_alto": 98.66622917164848, "f1_macro": 93.94177812745868, "f1_ic_baixo": 85.19230769230771, "f1_ic_alto": 100.0, "bal_acc": 91.17647058823528, "recall_fake": 82.35294117647058, "recall_true": 100.0, "fake_como_fake": 14, "fake_como_true": 3, "true_como_fake": 0, "true_como_true": 60, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 39, "acerto_Boatos.org": 82.35294117647058, "n_Boatos.org": 17, "acerto_E-farsas": null, "n_E-farsas": null, "acerto_G1": 100.0, "n_G1": 21}, {"metodo": "TF-IDF palavras + números (E8)", "teste": "Testes 1 + 2", "n": 116, "accuracy": 93.96551724137932, "acc_ic_baixo": 88.0658660391947, "acc_ic_alto": 97.046482260561, "f1_macro": 91.65896250642014, "f1_ic_baixo": 84.88220551378446, "f1_ic_alto": 96.95623491856938, "bal_acc": 88.70967741935483, "recall_fake": 77.41935483870968, "recall_true": 100.0, "fake_como_fake": 24, "fake_como_true": 7, "true_como_fake": 0, "true_como_true": 85, "acerto_Agência Brasil": 100.0, "n_Agência Brasil": 49, "acerto_Boatos.org": 80.0, "n_Boatos.org": 30, "acerto_E-farsas": 0.0, "n_E-farsas": 1.0, "acerto_G1": 100.0, "n_G1": 36}], "erros": [{"teste": "Teste 1 (30/09)", "fonte": "Boatos.org", "label": "fake", "previsto": "true", "texto_50": "Bolsonaristas ateam fogo em imagem de Santa. Vídeo registra crime de intolerância religiosa no Pará. bolsonaristas tocaram fogo na imagem da padroeira do Brasil, nossa senhora Aparecida. IMAGEM DE NOSSA SENHORA APARECIDA É INCENDIADA EM NOVO PROGRESSO/PA."}, {"teste": "Teste 1 (30/09)", "fonte": "Boatos.org", "label": "fake", "previsto": "true", "texto_50": "Caixão do cantor Rick pode pesar mais de 300 kg chama atenção E veja, o caixão milionário do cantor Rick pode pesar até 300 quilos, um caixão maciço com detalhes banhado a ouro, e o que chama a atenção: pode até ter ar-condicionado. É o que muitas pessoas na internet"}, {"teste": "Teste 1 (30/09)", "fonte": "Boatos.org", "label": "fake", "previsto": "true", "texto_50": "Ele comprou dois assentos no avião. Um pro lado dele. O outro continuava vazio, pra que a esposa que morreu pudesse continuar viajando junto. Ninguém percebia a dor até o momento em que começava a chorar. Quando a comissária de bordo começou a exigir que ele se sentasse, tinha um"}, {"teste": "Teste 1 (30/09)", "fonte": "E-farsas", "label": "fake", "previsto": "true", "texto_50": "Um cientista brilhante preso entre linhas temporais. Um homem que surge em ruínas antigas, guerras futuras e eventos catastróficos ao longo dos séculos."}, {"teste": "Teste 2 (02–05/10)", "fonte": "Boatos.org", "label": "fake", "previsto": "true", "texto_50": "ZANIN ASSUME O TSE ÀS VÉSPERAS DAS ELEIÇÕES DE 2026 O ministro Cristiano Zanin, que já atuou como advogado de Lula, tomou posse na presidência do Tribunal Superior Eleitoral (TSE). A mudança acontece em um momento decisivo: o Brasil se aproxima das eleições de 2026 e a Justiça Eleitoral começa"}], "n_testes": [{"teste": "Teste 1 (30/09)", "label": "fake", "fonte": "Boatos.org", "n": 13}, {"teste": "Teste 1 (30/09)", "label": "fake", "fonte": "E-farsas", "n": 1}, {"teste": "Teste 1 (30/09)", "label": "true", "fonte": "Agência Brasil", "n": 10}, {"teste": "Teste 1 (30/09)", "label": "true", "fonte": "G1", "n": 15}, {"teste": "Teste 2 (02–05/10)", "label": "fake", "fonte": "Boatos.org", "n": 17}, {"teste": "Teste 2 (02–05/10)", "label": "true", "fonte": "Agência Brasil", "n": 39}, {"teste": "Teste 2 (02–05/10)", "label": "true", "fonte": "G1", "n": 21}]};
+const ESC = "TF-IDF caracteres [ESCOLHIDO]";
+const NS = "http://www.w3.org/2000/svg";
+const fmt = (v, c = 1) => v == null ? "–" : v.toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c });
+
+// SVG helper
+function el(tag, attrs = {}, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svg(id, w, h) {
+  const s = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img" });
+  document.getElementById(id).appendChild(s);
+  return s;
+}
+
+// Tooltip compartilhado: qualquer marca com data-tip.
+const tip = document.getElementById("tip");
+document.addEventListener("pointermove", ev => {
+  const t = ev.target.closest && ev.target.closest("[data-tip]");
+  if (!t) { tip.hidden = true; return; }
+  tip.textContent = t.getAttribute("data-tip");
+  tip.hidden = false;
+  const x = Math.min(ev.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + "px"; tip.style.top = (ev.clientY + 14) + "px";
+});
+
+// Eixo horizontal com grade.
+function eixoX(s, x0, x1, y0, y1, min, max, passo, sufixo = "") {
+  const X = v => x0 + (v - min) / (max - min) * (x1 - x0);
+  for (let v = min; v <= max + 1e-9; v += passo) {
+    el("line", { x1: X(v), x2: X(v), y1: y0, y2: y1, class: "grade" }, s);
+    el("text", { x: X(v), y: y1 + 16, "text-anchor": "middle" }, s, fmt(v, 0) + sufixo);
+  }
+  return X;
+}
+
+// Gráfico de pontos horizontal (F1 por item), com faixa de empate.
+function pontos(id, linhas, { min, max, passo, empate = 0, rotW = 260, w = 900 }) {
+  const lh = 26, top = 8, h = top + linhas.length * lh + 30;
+  const s = svg(id, w, h);
+  const x0 = rotW, x1 = w - 60, y1 = top + linhas.length * lh;
+  const X = eixoX(s, x0, x1, top, y1, min, max, passo);
+  if (empate) {
+    const melhor = Math.max(...linhas.map(l => l.v));
+    el("rect", { x: X(melhor - empate), y: top, width: X(melhor) - X(melhor - empate), height: y1 - top, fill: "var(--empate)" }, s);
+  }
+  linhas.forEach((l, i) => {
+    const y = top + i * lh + lh / 2;
+    el("text", { x: x0 - 12, y: y + 4, "text-anchor": "end", class: "rot" + (l.esc ? " esc" : "") }, s, l.rot);
+    el("line", { x1: x0, x2: X(l.v), y1: y, y2: y, stroke: "var(--fio)", "stroke-width": 1 }, s);
+    const g = el("g", { "data-tip": l.tip || `${l.rot}: ${fmt(l.v, 2)}` }, s);
+    el("rect", { x: x0, y: y - lh / 2, width: x1 - x0, height: lh, fill: "transparent" }, g);
+    el("circle", { cx: X(l.v), cy: y, r: l.esc ? 6.5 : 5, fill: l.cor, stroke: "var(--folha)", "stroke-width": 2 }, g);
+    el("text", { x: X(l.v) + 11, y: y + 4, class: "val" }, g, fmt(l.v));
+  });
+}
+
+// Placar de abertura (testes 1 + 2, modelo escolhido x melhor modelo antigo).
+function placar() {
+  const t = D.teste.filter(r => r.teste === "Testes 1 + 2");
+  const esc = t.find(r => r.metodo === ESC);
+  const cand = t.find(r => r.metodo.startsWith("Fake.br + FakeRecogna"));
+  const ant = t.find(r => r.metodo.startsWith("Fake.br (modelo_final"));
+  const cel = (num, txt, ic) => `<div><b>${num}</b><span>${txt}</span>${ic ? `<small>${ic}</small>` : ""}</div>`;
+  document.getElementById("placar").innerHTML =
+    cel(fmt(esc.f1_macro), "F1 macro do modelo escolhido nos testes externos", `IC 95% [${fmt(esc.f1_ic_baixo, 0)}–${fmt(esc.f1_ic_alto, 0)}] · n=${esc.n}`) +
+    cel(fmt(cand.f1_macro), "F1 do melhor modelo anterior (Fake.br + FakeRecogna)", `IC 95% [${fmt(cand.f1_ic_baixo, 0)}–${fmt(cand.f1_ic_alto, 0)}]`) +
+    cel(fmt(ant.f1_macro), "F1 do modelo treinado só no Fake.br", `IC 95% [${fmt(ant.f1_ic_baixo, 0)}–${fmt(ant.f1_ic_alto, 0)}]`) +
+    cel(fmt(esc.recall_fake, 0) + "% · " + fmt(esc.recall_true, 0) + "%", "das fake e das true reconhecidas (escolhido)", `bal. acc ${fmt(esc.bal_acc)}`);
+  const n = D.n_testes.reduce((a, r) => a + r.n, 0);
+  document.getElementById("n-testes").textContent = n.toLocaleString("pt-BR");
+}
+
+// 1. Caixas de tamanho.
+function grTamanho() {
+  const s = svg("g-tamanho", 520, 170), x0 = 60, x1 = 500;
+  const X = eixoX(s, x0, x1, 10, 130, 0, 9000, 3000);
+  [["fake", 40], ["true", 95]].forEach(([c, y]) => {
+    const [q1, med, q3, media] = D.historico.tamanho[c];
+    el("text", { x: x0 - 10, y: y + 4, "text-anchor": "end", class: "rot" }, s, c);
+    const g = el("g", { "data-tip": `${c}: 25% ${q1} · mediana ${med} · 75% ${q3} · média ${media} caracteres` }, s);
+    el("rect", { x: X(q1), y: y - 16, width: X(q3) - X(q1), height: 32, rx: 3, fill: `var(--${c})`, opacity: 0.85 }, g);
+    el("line", { x1: X(med), x2: X(med), y1: y - 16, y2: y + 16, stroke: "var(--folha)", "stroke-width": 2.5 }, g);
+    el("text", { x: X(q3) + 8, y: y + 4, class: "val" }, g, `mediana ${med.toLocaleString("pt-BR")}`);
+  });
+}
+
+// 1. Barras do truncamento.
+function grTrunc() {
+  const s = svg("g-trunc", 520, 200), x0 = 40, x1 = 510, top = 10, base = 160;
+  const Y = v => base - v / 100 * (base - top);
+  [0, 25, 50, 75, 100].forEach(v => {
+    el("line", { x1: x0, x2: x1, y1: Y(v), y2: Y(v), class: "grade" }, s);
+    el("text", { x: x0 - 8, y: Y(v) + 4, "text-anchor": "end" }, s, v);
+  });
+  const grupos = D.historico.truncamento, gw = (x1 - x0) / grupos.length, bw = 34;
+  grupos.forEach((g, i) => {
+    const cx = x0 + gw * i + gw / 2;
+    [["so_tamanho", "var(--tinta-3)", "só tamanho"], ["tfidf", "var(--destaque)", "TF-IDF"]].forEach(([k, cor, nome], j) => {
+      const x = cx + (j ? 3 : -bw - 3), v = g[k];
+      const r = el("g", { "data-tip": `${nome}, N=${g.N}: F1 ${fmt(v, 2)}` }, s);
+      el("path", { d: barraV(x, Y(v), bw, base - Y(v)), fill: cor }, r);
+      el("text", { x: x + bw / 2, y: Y(v) - 6, "text-anchor": "middle", class: "val" }, r, fmt(v, 0));
+    });
+    el("text", { x: cx, y: base + 18, "text-anchor": "middle", class: "rot" }, s, `${g.N} palavras`);
+  });
+  el("line", { x1: x0, x2: x1, y1: base, y2: base, class: "eixo" }, s);
+  el("text", { x: x1, y: 194, "text-anchor": "end" }, s, "cinza = só tamanho · roxo = TF-IDF");
+}
+// Barra vertical com cantos arredondados só no topo (4px).
+function barraV(x, y, w, h) {
+  const r = Math.min(4, h);
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+
+// 2. Dados.
+function grDados() {
+  const ord = [...D.e4].sort((a, b) => b.f1_macro - a.f1_macro);
+  pontos("g-dados", ord.map(r => {
+    const esc = r.experimento === "fr2021 + ext";
+    return { rot: r.experimento, v: r.f1_macro, esc,
+             cor: esc ? "var(--destaque)" : r.experimento.includes("ext") ? "var(--true)" : "var(--tinta-3)",
+             tip: `${r.experimento}: F1 ${fmt(r.f1_macro, 2)} · recall fake ${fmt(r.recall_fake)} · recall true ${fmt(r.recall_true)}` };
+  }), { min: 65, max: 95, passo: 5, empate: 2, rotW: 250 });
+}
+
+// 3. Métodos.
+function grMetodos() {
+  const nomes = { "word(1,2) C=1 [base]": "TF-IDF palavras [base]", "char_wb(2,5)": "TF-IDF caracteres" };
+  const l = [...D.e5.map(r => ({ rot: nomes[r.experimento] || "TF-IDF " + r.experimento, v: r.f1_macro, ori: r })),
+             ...D.e7.filter(r => r.experimento.endsWith("C=10")).map(r => ({ rot: r.experimento.replace("emb ", "embeddings ").replace(" + LogReg C=10", ""), v: r.f1_macro, ori: r }))]
+    .sort((a, b) => b.v - a.v)
+    .map(x => ({ ...x, esc: x.rot === "TF-IDF caracteres", cor: x.rot === "TF-IDF caracteres" ? "var(--destaque)" : x.rot.startsWith("embeddings") ? "var(--fake)" : "var(--tinta-2)",
+                 tip: `${x.rot}: F1 ${fmt(x.v, 2)} · recall fake ${fmt(x.ori.recall_fake)} · recall true ${fmt(x.ori.recall_true)}` }));
+  pontos("g-metodos", l, { min: 80, max: 95, passo: 5, empate: 2, rotW: 330 });
+}
+
+// 4. Fontes (barras agrupadas por cenário).
+function grFontes() {
+  const series = [["fr2021 |", "só FakeRecogna (sem externo)", "var(--tinta-3)"],
+                  ["fr2021+ext |", "+ externo, TF-IDF palavras", "var(--true)"],
+                  ["fr2021+ext char_wb(2,5) |", "+ externo, TF-IDF caracteres", "var(--destaque)"],
+                  ["fr2021+ext word(1,2) + char_wb(2,5) sem lowercase |", "+ externo, palavras + caracteres", "var(--fake)"]];
+  document.getElementById("leg-fontes").innerHTML = series.map(s => `<span><i style="background:${s[2]}"></i>${s[1]}</span>`).join("");
+  const cen = [["sem E-farsas/Agência Brasil", "fontes novas: E-farsas e Agência Brasil"], ["sem Boatos.org/G1", "fontes novas: Boatos.org e G1"]];
+  const s = svg("g-fontes", 900, 230), x0 = 40, x1 = 890, top = 14, base = 186, min = 70, max = 85;
+  const Y = v => base - (v - min) / (max - min) * (base - top);
+  for (let v = min; v <= max; v += 5) {
+    el("line", { x1: x0, x2: x1, y1: Y(v), y2: Y(v), class: "grade" }, s);
+    el("text", { x: x0 - 8, y: Y(v) + 4, "text-anchor": "end" }, s, v);
+  }
+  const gw = (x1 - x0) / 2, bw = 56, gap = 6;
+  cen.forEach(([chave, nome], i) => {
+    const cx = x0 + gw * i + gw / 2, total = series.length * bw + (series.length - 1) * gap;
+    series.forEach(([pref, rot, cor], j) => {
+      const r = D.e6.find(r => r.experimento.startsWith(pref) && r.experimento.includes(chave));
+      if (!r) return;
+      const x = cx - total / 2 + j * (bw + gap), v = r.f1_macro;
+      const g = el("g", { "data-tip": `${rot} — ${nome}: F1 ${fmt(v, 2)}` }, s);
+      el("path", { d: barraV(x, Y(v), bw, base - Y(v)), fill: cor }, g);
+      el("text", { x: x + bw / 2, y: Y(v) - 6, "text-anchor": "middle", class: "val" }, g, fmt(v));
+    });
+    el("text", { x: cx, y: base + 20, "text-anchor": "middle", class: "rot" }, s, nome);
+  });
+  el("line", { x1: x0, x2: x1, y1: base, y2: base, class: "eixo" }, s);
+  el("text", { x: x0, y: 224 }, s, "eixo começa em 70 para mostrar as diferenças");
+}
+
+// 5. Números.
+function grNum() {
+  const s = svg("g-num", 520, 190), x0 = 150, x1 = 500;
+  const X = eixoX(s, x0, x1, 6, 150, 0, 6, 2, "%");
+  D.numeros.forEach((r, i) => {
+    const y = 20 + i * 44;
+    el("text", { x: x0 - 10, y: y + 13, "text-anchor": "end", class: "rot" }, s, r.corpus);
+    [["fake", 0], ["true", 15]].forEach(([c, dy]) => {
+      const g = el("g", { "data-tip": `${r.corpus}, ${c}: ${fmt(r[c], 2)}% das palavras são número (AUC ${fmt(r.auc, 2)})` }, s);
+      el("rect", { x: x0, y: y + dy, width: X(r[c]) - x0, height: 12, rx: 2, fill: `var(--${c})` }, g);
+      el("text", { x: X(r[c]) + 6, y: y + dy + 10, class: "val" }, g, fmt(r[c]) + "%");
+    });
+  });
+}
+function grNumModelo() {
+  const nomes = { "só números: categorias": "só números", "TF-IDF [base]": "TF-IDF palavras", "TF-IDF + categorias (peso 1)": "TF-IDF + números",
+                  "só tamanho (controle)": "só tamanho (controle)" };
+  const l = D.e8.filter(r => nomes[r.experimento]).map(r => ({ rot: nomes[r.experimento], v: r.f1_macro,
+    cor: r.experimento.startsWith("TF-IDF") ? "var(--true)" : "var(--tinta-3)" })).sort((a, b) => b.v - a.v);
+  pontos("g-num-modelo", l, { min: 40, max: 100, passo: 20, rotW: 170, w: 520 });
+}
+
+// 6. Teste final: pontos com IC.
+function grTeste() {
+  const testes = ["Teste 1 (30/09)", "Teste 2 (02–05/10)", "Testes 1 + 2"];
+  const metodos = [...new Set(D.teste.map(r => r.metodo))];
+  const colW = 200, rotW = 300, lh = 30, top = 30, w = rotW + colW * 3 + 10, h = top + metodos.length * lh + 30;
+  const s = svg("g-teste", w, h), min = 30, max = 100;
+  testes.forEach((t, k) => {
+    const x0 = rotW + k * colW + 10, x1 = x0 + colW - 24;
+    const X = v => x0 + (Math.max(min, v) - min) / (max - min) * (x1 - x0);
+    const nT = D.teste.find(r => r.teste === t).n;
+    el("text", { x: (x0 + x1) / 2, y: 14, "text-anchor": "middle", class: "rot" }, s, `${t} · n=${nT}`);
+    [40, 60, 80, 100].forEach(v => {
+      el("line", { x1: X(v), x2: X(v), y1: top, y2: top + metodos.length * lh, class: "grade" }, s);
+      el("text", { x: X(v), y: top + metodos.length * lh + 16, "text-anchor": "middle" }, s, v);
+    });
+    metodos.forEach((m, i) => {
+      const r = D.teste.find(r => r.metodo === m && r.teste === t), y = top + i * lh + lh / 2, esc = m === ESC;
+      const cor = esc ? "var(--destaque)" : "var(--tinta-2)";
+      const g = el("g", { "data-tip": `${m} — ${t}: F1 ${fmt(r.f1_macro)} [${fmt(r.f1_ic_baixo, 0)}–${fmt(r.f1_ic_alto, 0)}] · recall fake ${fmt(r.recall_fake, 0)}% · recall true ${fmt(r.recall_true, 0)}%` }, s);
+      el("rect", { x: x0, y: y - lh / 2, width: x1 - x0, height: lh, fill: "transparent" }, g);
+      el("line", { x1: X(r.f1_ic_baixo), x2: X(r.f1_ic_alto), y1: y, y2: y, stroke: cor, "stroke-width": 2, "stroke-linecap": "round", opacity: esc ? 1 : 0.55 }, g);
+      el("circle", { cx: X(r.f1_macro), cy: y, r: esc ? 6 : 4.5, fill: cor, stroke: "var(--folha)", "stroke-width": 2 }, g);
+    });
+  });
+  metodos.forEach((m, i) => el("text", { x: rotW - 6, y: top + i * lh + lh / 2 + 4, "text-anchor": "end", class: "rot" + (m === ESC ? " esc" : "") }, s,
+    m.replace(" [ESCOLHIDO]", " ★")));
+}
+
+function matriz() {
+  const r = D.teste.find(r => r.metodo === ESC && r.teste === "Testes 1 + 2");
+  document.getElementById("matriz").innerHTML =
+    `<div></div><div>previsto fake</div><div>previsto true</div>
+     <div>real fake</div><div class="c ok">${r.fake_como_fake}</div><div class="c erro">${r.fake_como_true}</div>
+     <div>real true</div><div class="c erro">${r.true_como_fake}</div><div class="c ok">${r.true_como_true}</div>`;
+}
+
+function grFonteTeste() {
+  const r = D.teste.find(r => r.metodo === ESC && r.teste === "Testes 1 + 2");
+  const fontes = Object.keys(r).filter(k => k.startsWith("acerto_") && r[k] != null).map(k => k.slice(7));
+  const cls = f => (f === "G1" || f === "Agência Brasil") ? "true" : "fake";
+  const s = svg("g-fonte-teste", 520, 40 + fontes.length * 36), x0 = 150, x1 = 470;
+  const X = eixoX(s, x0, x1, 6, 10 + fontes.length * 36, 0, 100, 25, "%");
+  fontes.forEach((f, i) => {
+    const y = 14 + i * 36, v = r["acerto_" + f], n = r["n_" + f];
+    el("text", { x: x0 - 10, y: y + 13, "text-anchor": "end", class: "rot" }, s, `${f} (n=${n})`);
+    const g = el("g", { "data-tip": `${f} (${cls(f)}): ${fmt(v)}% de acerto em ${n} itens` }, s);
+    el("rect", { x: x0, y, width: Math.max(2, X(v) - x0), height: 18, rx: 3, fill: `var(--${cls(f)})` }, g);
+    el("text", { x: X(v) + 6, y: y + 13, class: "val" }, g, fmt(v, 0) + "%");
+  });
+}
+
+function tabelaTeste() {
+  const rows = D.teste.map(r => `<tr class="${r.metodo === ESC ? "esc" : ""}"><td>${r.metodo.replace(" [ESCOLHIDO]", " ★")}</td><td>${r.teste}</td>
+    <td>${fmt(r.f1_macro)} <span style="color:var(--tinta-3)">[${fmt(r.f1_ic_baixo, 0)}–${fmt(r.f1_ic_alto, 0)}]</span></td>
+    <td>${fmt(r.accuracy)} <span style="color:var(--tinta-3)">[${fmt(r.acc_ic_baixo, 0)}–${fmt(r.acc_ic_alto, 0)}]</span></td>
+    <td>${fmt(r.bal_acc)}</td><td>${fmt(r.recall_fake)}</td><td>${fmt(r.recall_true)}</td></tr>`).join("");
+  document.getElementById("tabela-teste").innerHTML = `<table><thead><tr><th>Método</th><th>Teste</th><th>F1 macro [IC]</th>
+    <th>Accuracy [IC]</th><th>Bal. acc</th><th>Recall fake</th><th>Recall true</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function erros() {
+  const box = document.getElementById("erros");
+  box.innerHTML = D.erros.map(e => `<div class="exemplo">
+    <div class="meta"><span class="tag ${e.label}">${e.label.toUpperCase()}</span> previsto como
+      <span class="tag ${e.previsto}">${e.previsto.toUpperCase()}</span> · ${e.fonte} · ${e.teste}</div>
+    <blockquote>“${e.texto_50}”</blockquote></div>`).join("") || "<p>Nenhum erro.</p>";
+}
+
+placar(); grTamanho(); grTrunc(); grDados(); grMetodos(); grFontes(); grNum(); grNumModelo();
+grTeste(); matriz(); grFonteTeste(); tabelaTeste(); erros();
+</script>

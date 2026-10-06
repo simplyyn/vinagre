@@ -1,0 +1,8 @@
+# Para usar o modelo (usar_modelo.py): só as três primeiras.
+scikit-learn==1.6.1
+joblib
+numpy<2.3
+# Para retreinar do zero (treinar_do_zero.py): também estas.
+pandas
+datasets
+pyarrow

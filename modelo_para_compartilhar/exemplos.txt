@@ -1,0 +1,22 @@
+# Exemplos reais dos testes finais do projeto (set/out 2026). Uma notícia por linha; linhas com # são ignoradas.
+
+# Boato de WhatsApp sobre eleição (Boatos.org) - esperado FAKE
+Atenção, aposentado: se você não votar, seu benefício poderá ser cancelado. O voto agora serve como prova de vida. Lula está desesperado.
+
+# Boato em CAIXA ALTA (Boatos.org) - esperado FAKE
+URGENTE! PASSAPORTE DE FLÁVIO BOLSONARO É APREENDIDO! KÁSSIO NUNES RECUA! FLÁVIO BOLSONARO EM PÂNICO Descubra a VERDADE que eles estavam ESCONDENDO de você A apreensão do passaporte de Flávio Bolsonaro é uma BOMBA que abala os pilares da política nacional! Neste vídeo, discutimos a drástica ação judicial que resultou na apreensão do passaporte do senador Flávio Bolsonaro, em meio a
+
+# Boato com Urgente!!! (Boatos.org) - esperado FAKE
+Urgente!!! Polícia Militar de SP registra planos de ataque da facção do PCC em todo o Brasil. Os ataques seriam em embaixadas, delegacias, vias públicas e prédios oficiais. Logo que confirmada a vitória de Flávio Bolsonaro os ataques acontecerão
+
+# Boato escrito como notícia (Boatos.org) - o modelo ERRA e diz TRUE (limitação conhecida)
+ZANIN ASSUME O TSE ÀS VÉSPERAS DAS ELEIÇÕES DE 2026 O ministro Cristiano Zanin, que já atuou como advogado de Lula, tomou posse na presidência do Tribunal Superior Eleitoral (TSE). A mudança acontece em um momento decisivo: o Brasil se aproxima das eleições de 2026 e a Justiça Eleitoral começa a entrar no centro das atenções. Zanin já foi advogado
+
+# Notícia do G1 - esperado TRUE
+Belém registrou 37 °C de temperatura máxima no sábado (3), a maior temperatura para o mês de outubro em 25 anos, segundo o Instituto Nacional de Meteorologia (Inmet) informou ao g1 nesta segunda-feira (5). A temperatura mínima na capital foi de 25 °C, registrada entre 5h30 e 6h30 também no sábado (3). O calor ocorre em um cenário de influência
+
+# Notícia da Agência Brasil - esperado TRUE
+A projeção do mercado financeiro para a inflação oficial em 2026 subiu de 4,99% para 5,01%, segundo o Boletim Focus divulgado nesta segunda-feira (5) pelo Banco Central. Foi a terceira alta consecutiva da estimativa para o Índice Nacional de Preços ao Consumidor Amplo (IPCA), considerado a inflação oficial do país. Para 2027, a expectativa para a inflação passou de 4,31%
+
+# Notícia do G1 que fica perto da fronteira (acerta, mas com dúvida)
+A Prefeitura de Sonora, a 360 quilômetros de Campo Grande, abriu inscrições para um processo seletivo simplificado da Secretaria Municipal de Saúde. Os interessados podem se inscrever entre 5 e 13 de outubro, exclusivamente pela internet, pelo site oficial da prefeitura. Não há cobrança de taxa de inscrição, nem aplicação de provas. A seleção terá duas etapas: o preenchimento do

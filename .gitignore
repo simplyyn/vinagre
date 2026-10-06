@@ -1,5 +1,6 @@
 # Ambiente Python local
 .venv/
+.venv_pacote/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
