@@ -15,9 +15,11 @@ py -3.12 -m venv .venv   # ou: & "$env:LOCALAPPDATA\Programs\Python\Python312\py
 O scikit-learn **tem que ser 1.6.1** (versão em que os `.joblib` foram salvos). Conferir:
 `.venv\Scripts\python.exe -c "import sklearn; print(sklearn.__version__)"`.
 
-No PC usado em 05/10 a pasta do projeto é
-`C:\Users\24018503\vinagre-src\vinagre-6f8fe7b8d85e567213a7831a10de6049d12ee37a` (repositório Git ligado ao GitHub;
-`git push` funciona pelo Git Credential Manager). Em outro PC: `git clone https://github.com/simplyyn/vinagre`.
+PCs conhecidos onde o projeto está configurado:
+- `C:\Users\24018503\vinagre-src\vinagre-6f8fe7b8d85e567213a7831a10de6049d12ee37a` (PC de 05/10, experimentos)
+- `C:\Users\Caio\vinagre` (PC de 05/10/2026 tarde, demos e apresentação; autenticado no GitHub como `simplyyn`)
+
+Em outro PC: `git clone https://github.com/simplyyn/vinagre`.
 
 ## 2. Estado em 05/10/2026 (fase de experimentos ENCERRADA)
 
@@ -27,9 +29,23 @@ No PC usado em 05/10 a pasta do projeto é
   (77 itens, notícias de 28/09 a 05/10) → **F1 94,2 [IC 89–99]**, recall true 100% (85/85), recall fake 83,9%.
   Os 5 erros são boatos com redação de notícia ou narrativa. Fontes novas (E6): ~80–83.
 - Tudo registrado no `EXPERIMENTOS.md` (E0–E8, escolha, pré-registro, avaliação final).
-- **Relatório da apresentação (sexta, 09/10):** `relatorio.html` (abrir no navegador) ou o link publicado
-  https://claude.ai/artifact/VYGKPhFndmkPikg617fFXg. Regenerar: `.venv\Scripts\python.exe dados_relatorio.py`.
 - **Os testes 1 e 2 já foram usados:** não servem mais para escolher ou ajustar nada.
+
+### Materiais prontos para a apresentação (09/10/2026)
+
+| Arquivo | O que é |
+|---|---|
+| `relatorio.html` | Relatório técnico completo; gerado por `dados_relatorio.py`. Link publicado: https://claude.ai/artifact/VYGKPhFndmkPikg617fFXg |
+| `apresentacao.html` | Mini-site de apresentação: pipeline, hiperparâmetros, jornada de experimentos, resultados |
+| `apresentacao.pptx` | 10 slides (título, problema, dados, pipeline, hiperparâmetros, experimentos, critérios de escolha, resultados, demo + limitações, conclusão) |
+| `dashboard_testes.html` | Demo: 10 notícias ao vivo (5 true + 5 fake); 8/10 corretas — **não é medida oficial** |
+| `dashboard50_testes.html` | Demo: 50 notícias ao vivo, 5 folds; 41/50 (82%), Recall TRUE 100% — **não é medida oficial** |
+
+**Sobre os demos (10 e 50 notícias):** coletados via RSS em 05/10/2026, propósito demonstrativo.
+Os dois erros do demo-10 são FAKE→TRUE: um boato com redação jornalística (confiança 0.131) e um perto da fronteira
+(confiança 0.004) — exatamente a limitação 3 do README. O Recall FAKE mais baixo no demo-50 (64%) se explica pelas
+páginas antigas do E-farsas, cujo estilo de boato é mais variado que o Boatos.org. O Recall TRUE permanece 100%
+em todos os folds, como nos testes formais.
 
 ### Não rodar de novo
 - `coletar_corpus_externo.py`, `experimentos.py preparar/dados/modelo/fontes/embeddings`, `exp_numeros.py modelo/fontes`
@@ -77,10 +93,16 @@ Qualquer mudança no modelo exige um teste novo depois (o 3 ou outro), pois os t
 ```
 Leia README.md, EXPERIMENTOS.md e CONTINUAR.md antes de qualquer ação. A fase de experimentos terminou: o modelo
 escolhido é modelos_finais/03.joblib (TF-IDF char_wb(2,5), fr2021+ext) e os testes 1 e 2 já foram avaliados uma vez.
+
+Contexto rápido:
+- Apresentação: 09/10/2026. Materiais prontos: relatorio.html, apresentacao.html, apresentacao.pptx,
+  dashboard_testes.html (demo 10 notícias), dashboard50_testes.html (demo 50 notícias, 5 folds).
+- Demos (10 e 50 notícias) são demonstrativos, não medidas formais. Os 2 erros do demo-10 são FAKE→TRUE
+  (boato com redação jornalística), exatamente a limitação 3 do README.
+
 Regras: responda em português, didático, explicando o motivo de cada decisão; registre cada ação, motivo e resultado
 em EXPERIMENTOS.md; NÃO use os testes 1 e 2 para escolher ou ajustar nada; qualquer teste novo só é avaliado uma vez,
-com minha autorização e pré-registro; commits sem coautoria do Claude.
+com minha autorização e pré-registro.
 
-Confira o ambiente (.venv, sklearn 1.6.1; seção 1 do CONTINUAR.md se faltar algo). Quero continuar testando o modelo
-escolhido seguindo a seção 3 do CONTINUAR.md: <descreva aqui o que quer fazer — teste manual, teste 3 ou melhoria>.
+Confira o ambiente (.venv, sklearn 1.6.1; seção 1 do CONTINUAR.md se faltar algo). Quero: <descreva o que quer fazer>.
 ```

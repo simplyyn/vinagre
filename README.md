@@ -334,11 +334,20 @@ fontes novas do Fake.br (modelo antigo).
 
 1. ~~Coletar e conferir o teste externo~~ (feito; mais um 2º teste).
 2. ~~Avaliar uma única vez no teste~~ (feito em 05/10/2026, 8 métodos; seção 5.11).
-3. Escrever o relatório final (base: `relatorio.html` e `EXPERIMENTOS.md`), separando interno, validação e teste, e
-   com as limitações da seção 7. Apresentação: 09/10/2026.
-4. Para medir de novo: teste 3 com notícias posteriores a 05/10, pré-registrado, só o modelo escolhido
+3. ~~Materiais de apresentação~~ (feito em 05/10/2026):
+   - `relatorio.html` — relatório técnico gerado por `dados_relatorio.py` a partir dos CSVs de resultado.
+   - `dashboard_testes.html` — demo: 10 notícias ao vivo (5 true + 5 fake); 8/10 corretas; os 2 erros são
+     FAKE→TRUE (boato com redação jornalística, confiança próxima de 0 — limitação esperada).
+   - `dashboard50_testes.html` — demo: 50 notícias ao vivo, validação cruzada 5 folds; 41/50 (82%); Recall
+     TRUE 100% em todos os folds; Recall FAKE 64% (E-farsas de páginas antigas tem estilo mais variado).
+     **Não é medida oficial** — notícias coletadas em 05/10/2026 via RSS, propósito demonstrativo.
+   - `apresentacao.html` — mini-site de apresentação (pipeline, hiperparâmetros, experimentos, resultados).
+   - `apresentacao.pptx` — 10 slides: título, problema, dados, pipeline, hiperparâmetros, experimentos,
+     critérios de escolha, resultados finais, demo 50 + limitações, conclusão.
+4. **Apresentação: 09/10/2026.**
+5. Para medir de novo: teste 3 com notícias posteriores a 05/10, pré-registrado, só o modelo escolhido
    (roteiro na seção 3.2 do `CONTINUAR.md`).
-5. Opcionais (não testados, não assumir que ajudam; exigem nova validação e um teste novo):
+6. Opcionais (não testados, não assumir que ajudam; exigem nova validação e um teste novo):
    - remover os 42 especiais publicitários do G1 do corpus externo;
    - no treino misto, usar em cada nível só textos com pelo menos N palavras (reduz o resíduo de tamanho em N=100);
    - calibrar scores para probabilidade (produto);
