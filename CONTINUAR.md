@@ -36,6 +36,7 @@ Em outro PC: `git clone https://github.com/simplyyn/vinagre`.
 | Arquivo | O que é |
 |---|---|
 | `relatorio.html` | Relatório técnico completo; gerado por `dados_relatorio.py`. Link publicado: https://claude.ai/artifact/VYGKPhFndmkPikg617fFXg |
+| `apresentacao_projeto.ipynb` | Notebook de apresentação: processo + código + explicação por seção; roda em ~1–2 min (kernel "Python 3 (vinagre .venv)"), sem refazer coletas nem a avaliação final |
 | `apresentacao.html` | Mini-site de apresentação: pipeline, hiperparâmetros, jornada de experimentos, resultados |
 | `apresentacao.pptx` | 10 slides (título, problema, dados, pipeline, hiperparâmetros, experimentos, critérios de escolha, resultados, demo + limitações, conclusão) |
 | `dashboard_testes.html` | Demo: 10 notícias ao vivo (5 true + 5 fake); 8/10 corretas — **não é medida oficial** |

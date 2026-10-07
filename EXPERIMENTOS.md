@@ -306,6 +306,24 @@ Os testes 1 e 2 não podem mais ser usados para escolher ou ajustar nada.
 - **Para continuar testando com rigor:** coletar um teste 3 (notícias após 05/10), pré-registrar e avaliar só o
   modelo escolhido, sem mudanças (roteiro na seção 3.2 do `CONTINUAR.md`).
 
+## Notebook de apresentação (07/10/2026)
+
+- **Ação:** criado `apresentacao_projeto.ipynb`, que organiza o projeto na ordem dos processos (dados e atalho do
+  tamanho → pipeline → diagnósticos no Fake.br → FakeRecogna → E1–E8 → escolha e pré-registro → avaliação final →
+  modelo por dentro → demonstração → limitações), com um texto explicativo antes de cada parte.
+- **Por quê:** material para a apresentação de 09/10/2026, mostrando código e processo juntos.
+- **Como foi feito:** o notebook importa as funções dos scripts (não duplica código) e mostra o código-fonte das
+  etapas que não podem rodar de novo (coletas, `preparar`, `congelar`/`avaliar`). Os números de E3–E8 e do teste
+  final são lidos dos CSVs. **Nada foi retreinado nem reavaliado**; os testes 1 e 2 não foram usados de novo.
+- **Executado de ponta a ponta (≈1–2 min):** controles reproduzidos de novo (só tamanho 94,15% acc; TF-IDF N=50
+  89,88% F1 macro), iguais ao E0.
+- **Observação nova (descritiva, não muda nada):** os n-gramas de maior peso do modelo escolhido são sobretudo
+  pontuação (fake: `!`, travessões, colchetes, aspas curvas) e palavras gramaticais (true: `a`, `o`, `de`, `(`),
+  o que reforça a limitação 3 do README (o modelo aprende registro/estilo). Filtrando n-gramas com 4+ letras:
+  true → "disse", "casos", "anos"; fake → "post", "menti", "omit", "lula", "agora".
+- **Ambiente:** instalados `ipykernel`, `nbformat` e `nbclient` no `.venv` e registrado o kernel
+  "Python 3 (vinagre .venv)".
+
 ## E8. Feature de números (05/10/2026, fora do plano original)
 
 - **Hipótese (do responsável):** notícia verdadeira cita mais números (datas, valores, percentuais, quantidades)
